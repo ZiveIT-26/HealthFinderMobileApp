@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Фони віджетів з Figma. Кожен фон — лінійний градієнт
-/// і кілька м'яких еліптичних "плям" (radial) поверх нього.
-/// Малює їх віджет GradientSurface з core/widgets.
+/// Widget backgrounds from Figma. Each background is a linear gradient
+/// with several soft elliptical radial glows on top.
+/// Rendered by GradientSurface in core/widgets.
 abstract final class AppGradients {
   static const ai = CardBackground(
     base: LinearGradient(
@@ -46,7 +46,7 @@ abstract final class AppGradients {
       stops: [0, 0.60, 1],
     ),
     glows: [
-      // У Figma дві нижні плями трохи повернуті — тут без повороту, візуально майже те саме.
+      // In Figma the two lower glows are slightly rotated; here they are not, which looks nearly identical.
       Glow(center: Alignment(1.00, -1.00), radiusX: 1.10, radiusY: 1.02, color: Color(0xFFF57783), opacity: 0.79),
       Glow(center: Alignment(-0.83, 0.60), radiusX: 0.87, radiusY: 0.92, color: Color(0xFFF3C979), opacity: 0.70),
       Glow(center: Alignment(0.98, 0.90), radiusX: 0.80, radiusY: 0.75, color: Color(0xFFE3A7A1), opacity: 0.44),
@@ -68,7 +68,42 @@ abstract final class AppGradients {
     ],
   );
 
-  // Фони плиток погодних метрик: колір зверху → білий знизу.
+  /// Medication row that is still due: white fading to lilac on the right.
+  static const medicationDue = LinearGradient(
+    colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF), Color(0xFFE4D2F9)],
+    stops: [0, 0.65, 1],
+  );
+
+  /// AI chat: user message bubble.
+  static const chatUserBubble = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFF4EDF8), Color(0xFFEDE3F5)],
+  );
+
+  /// AI chat: robot avatar background in the header.
+  static const chatAvatar = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFF2E8EF), Color(0xFFE9D8EB)],
+  );
+
+  /// Detail pages: hero card at the top (e.g. clinic name).
+  static const detailHero = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFF6F0FA), Color(0xFFEEE6F8)],
+  );
+
+  /// Medical Card: hero card at the top.
+  static const medicalCardHero = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFEDE3F6), Color(0xFFE6D9F2), Color(0xFFF1ECFA)],
+    stops: [0, 0.6, 1],
+  );
+
+  // Weather metric tile backgrounds: color at the top fading to white.
   static const metricLow = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -89,10 +124,10 @@ abstract final class AppGradients {
     end: Alignment.bottomCenter,
     colors: [Color(0xFFFFC6D8), Color(0xFFFFFFFF)],
   ); // High / Very high
-  // Метрики без статусу (тиск, вологість) — просто AppColors.surface.
+  // Metrics without a status (pressure, humidity) use AppColors.surface.
 }
 
-/// Фон картки: базовий градієнт + плями, від нижньої до верхньої.
+/// Card background: base gradient plus glows, bottom to top.
 class CardBackground {
   const CardBackground({required this.base, required this.glows});
 
@@ -100,9 +135,9 @@ class CardBackground {
   final List<Glow> glows;
 }
 
-/// Еліптична пляма кольору, що м'яко зникає до країв.
-/// [center] — у координатах Alignment (-1..1),
-/// [radiusX] / [radiusY] — частка ширини / висоти картки.
+/// Elliptical color glow that fades out towards its edges.
+/// [center] is in Alignment coordinates (-1..1),
+/// [radiusX] / [radiusY] are fractions of the card width / height.
 class Glow {
   const Glow({
     required this.center,
@@ -143,7 +178,7 @@ List<Color> _fade(Color color, double opacity) => [
       color.withValues(alpha: 0),
     ];
 
-/// Розтягує коло RadialGradient в еліпс потрібного розміру.
+/// Stretches the RadialGradient circle into an ellipse of the required size.
 class _EllipseTransform extends GradientTransform {
   const _EllipseTransform(this.center, this.radiusX, this.radiusY);
 

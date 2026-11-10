@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
 
-/// Заокруглена картка з багатошаровим градієнтом (фон віджетів на Home).
+/// Rounded card with a layered gradient (Home widget background).
 class GradientSurface extends StatelessWidget {
   const GradientSurface({
     super.key,

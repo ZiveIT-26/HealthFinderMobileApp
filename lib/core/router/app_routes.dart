@@ -1,4 +1,4 @@
-/// Шляхи всіх екранів в одному місці, щоб не писати рядки вручну.
+/// All route paths in one place, so screens never hardcode strings.
 abstract final class AppRoutes {
   static const home = '/home';
   static const chat = '/chat';
