@@ -5,8 +5,8 @@ import 'app_colors.dart';
 import 'app_spacing.dart';
 import 'app_text_styles.dart';
 
-/// Збирає токени в ThemeData, щоб стандартні Material-віджети
-/// (TextField, Scaffold, кнопки) одразу виглядали як у Figma.
+/// Assembles the tokens into ThemeData so standard Material widgets
+/// (TextField, Scaffold, buttons) match Figma out of the box.
 abstract final class AppTheme {
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
@@ -20,8 +20,8 @@ abstract final class AppTheme {
     return ThemeData(
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.canvas,
-      // Inter для всього тексту за замовчуванням. interTextTheme() тут не
-      // використовуємо: у google_fonts 9 він несумісний з ThemeData цієї версії Flutter.
+      // Inter as the default font. interTextTheme() is not used here:
+      // in google_fonts 9 it is incompatible with ThemeData in this Flutter version.
       fontFamily: GoogleFonts.inter().fontFamily,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../widgets/app_bottom_nav.dart';
 
-/// Каркас для вкладок: поточна вкладка + нижня навігація.
+/// Tab shell: the current tab plus the bottom navigation.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -15,7 +15,7 @@ class AppShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: AppBottomNav(
         currentIndex: navigationShell.currentIndex,
-        // Повторне натискання на активну вкладку повертає її на початковий екран.
+        // Tapping the active tab again returns it to its initial screen.
         onTap: (index) => navigationShell.goBranch(
           index,
           initialLocation: index == navigationShell.currentIndex,

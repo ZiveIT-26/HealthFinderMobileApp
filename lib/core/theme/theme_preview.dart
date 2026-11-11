@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../widgets/gradient_surface.dart';
 import 'theme.dart';
 
-/// ТИМЧАСОВИЙ екран, щоб перевірити тему наживо.
-/// Видалимо, коли з'явиться справжній Home.
+/// TEMPORARY screen to check the theme visually.
+/// No longer used; safe to delete.
 class ThemePreview extends StatelessWidget {
   const ThemePreview({super.key});
 

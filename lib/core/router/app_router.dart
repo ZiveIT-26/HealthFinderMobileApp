@@ -9,15 +9,15 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import 'app_routes.dart';
 import 'app_shell.dart';
 
-/// Кореневий навігатор. Екрани з parentNavigatorKey: _rootKey
-/// відкриваються поверх нижньої навігації (без неї).
+/// Root navigator. Routes with parentNavigatorKey: _rootKey
+/// open above the bottom navigation (without it).
 final _rootKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: AppRoutes.home,
   routes: [
-    // Три вкладки з нижньою навігацією. Кожна вкладка пам'ятає свій стан.
+    // Three tabs with bottom navigation. Each tab keeps its own state.
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           AppShell(navigationShell: navigationShell),

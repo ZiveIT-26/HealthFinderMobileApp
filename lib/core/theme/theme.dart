@@ -1,4 +1,4 @@
-// Один імпорт для всієї теми:
+// Single import for the whole theme:
 // import 'package:health_finder/core/theme/theme.dart';
 export 'app_colors.dart';
 export 'app_gradients.dart';

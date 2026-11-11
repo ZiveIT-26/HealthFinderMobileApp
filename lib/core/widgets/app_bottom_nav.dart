@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
 
-/// Нижня навігація: Home / Chat / Profile.
+/// Bottom navigation: Home / Chat / Profile.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
