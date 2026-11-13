@@ -18,7 +18,7 @@ class ChatApi {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'prompt': prompt,
-        if (sessionId != null) 'sessionId': sessionId,
+        'sessionId': ?sessionId,
         if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
       }),
     );

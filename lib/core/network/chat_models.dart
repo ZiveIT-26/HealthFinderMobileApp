@@ -1,9 +1,10 @@
 class Doctor {
   final String name, speciality, address, url;
-  final String? phone, email, additionalInfo;
+  final String? doctorName, phone, email, additionalInfo;
 
   Doctor.fromJson(Map<String, dynamic> j)
       : name = j['name'] ?? '',
+        doctorName = j['doctorName'],
         speciality = j['speciality'] ?? '',
         address = j['address'] ?? '',
         url = j['url'] ?? '',

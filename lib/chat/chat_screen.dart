@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'chat_api.dart';
-import 'chat_controller.dart';
+import '../core/network/chat_api.dart';
+import '../core/network/chat_controller.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.baseUrl});
