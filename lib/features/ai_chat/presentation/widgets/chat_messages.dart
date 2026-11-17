@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:health_finder/core/network/chat_models.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/theme.dart';
-import '../../data/chat_mock_data.dart';
 import 'chat_header.dart';
 
 /// User message: teal bubble aligned to the right.
 class UserBubble extends StatelessWidget {
-  const UserBubble({super.key, required this.message});
+  const UserBubble({super.key, required this.text});
 
-  final UserMessage message;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +29,7 @@ class UserBubble extends StatelessWidget {
             ),
           ),
           child: Text(
-            message.text,
+            text,
             style: AppTextStyles.chatBody.copyWith(color: AppColors.chatInk),
           ),
         ),
@@ -39,17 +38,26 @@ class UserBubble extends StatelessWidget {
   }
 }
 
-/// Assistant reply: sender label, text, optional warning, clinic card and footnote.
+/// Assistant reply: sender label, streamed text, doctor cards and a disclaimer.
 class AssistantReply extends StatelessWidget {
-  const AssistantReply({super.key, required this.message});
+  const AssistantReply({
+    super.key,
+    required this.text,
+    this.doctors = const [],
+    this.isStreaming = false,
+  });
 
-  final AssistantMessage message;
+  final String text;
+  final List<Doctor> doctors;
+  final bool isStreaming;
 
   @override
   Widget build(BuildContext context) {
-    final warning = message.warning;
-    final clinic = message.clinic;
-    final footnote = message.footnote;
+    // The backend streams plain text, so split on blank lines into paragraphs.
+    final paragraphs = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -62,57 +70,49 @@ class AssistantReply extends StatelessWidget {
             Text('HealthFinder AI', style: AppTextStyles.chatSender),
           ],
         ),
-        for (final paragraph in message.paragraphs)
+        // Before the first token arrives
+        if (text.isEmpty && isStreaming) const _TypingIndicator(),
+        for (final paragraph in paragraphs)
           Text(paragraph, style: AppTextStyles.chatBody),
-        if (warning != null) _WarningNote(warning: warning),
-        if (clinic != null) _ClinicCard(clinic: clinic),
-        if (footnote != null) Text(footnote, style: AppTextStyles.chatFootnote),
+        for (final doctor in doctors) _DoctorCard(doctor: doctor),
+        if (!isStreaming && text.isNotEmpty)
+          Text(
+            'Not medical advice. Consult a professional.',
+            style: AppTextStyles.chatFootnote,
+          ),
       ],
     );
   }
 }
 
-class _WarningNote extends StatelessWidget {
-  const _WarningNote({required this.warning});
-
-  final ChatWarning warning;
+class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 10),
-      decoration: const BoxDecoration(
-        color: AppColors.chatWarning,
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(9)),
-      ),
-      child: Text.rich(
-        TextSpan(
-          style: AppTextStyles.chatBody.copyWith(color: AppColors.brandDark),
-          children: [
-            // Bold Inter comes from its own style: google_fonts registers
-            // each weight as a separate font family.
-            TextSpan(
-              text: warning.title,
-              style: AppTextStyles.chatSender.copyWith(
-                height: AppTextStyles.chatBody.height,
-                color: AppColors.brandDark,
-              ),
-            ),
-            TextSpan(text: warning.text),
-          ],
-        ),
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.chatAccent),
       ),
     );
   }
 }
 
-class _ClinicCard extends StatelessWidget {
-  const _ClinicCard({required this.clinic});
+class _DoctorCard extends StatelessWidget {
+  const _DoctorCard({required this.doctor});
 
-  final ClinicRecommendation clinic;
+  final Doctor doctor;
 
   @override
   Widget build(BuildContext context) {
+    final phone = doctor.phone;
+    final email = doctor.email;
+    final info = doctor.additionalInfo;
+    final website = _websiteUri(doctor.url);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.card, 17, AppSpacing.card, AppSpacing.card),
       decoration: BoxDecoration(
@@ -126,78 +126,134 @@ class _ClinicCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: AppSpacing.xxs,
         children: [
-          Text(clinic.category, style: AppTextStyles.chatEyebrow),
-          Text(clinic.doctor, style: AppTextStyles.chatCardTitle),
+          if (doctor.speciality.isNotEmpty)
+            Text(doctor.speciality, style: AppTextStyles.chatEyebrow),
           Text(
-            clinic.clinic,
-            style: AppTextStyles.chatMeta.copyWith(color: AppColors.chatFootnote),
+            (doctor.doctorName?.isNotEmpty ?? false) ? doctor.doctorName! : doctor.name,
+            style: AppTextStyles.chatCardTitle,
           ),
-          _MetaLine(icon: Icons.location_on_outlined, text: clinic.address),
-          _MetaLine(icon: Icons.schedule, text: clinic.hours),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Text(
-              clinic.description,
-              style: AppTextStyles.chatBody.copyWith(color: AppColors.chatDescription),
+          if (doctor.doctorName?.isNotEmpty ?? false)
+            Text(
+              doctor.name, // the place, smaller, under the doctor's name
+              style: AppTextStyles.chatMeta.copyWith(color: AppColors.chatFootnote),
+            ), 
+          if (doctor.address.isNotEmpty)
+            _MetaLine(icon: Icons.location_on_outlined, text: doctor.address),
+          if (phone != null && phone.isNotEmpty)
+            _MetaLine(
+              icon: Icons.phone_outlined,
+              text: phone,
+              onTap: () => _launch(context, Uri(scheme: 'tel', path: phone)),
             ),
-          ),
-          Material(
-            color: AppColors.chatAccent,
-            borderRadius: BorderRadius.circular(13),
-            child: InkWell(
+          if (email != null && email.isNotEmpty)
+            _MetaLine(
+              icon: Icons.mail_outline,
+              text: email,
+              onTap: () => _launch(context, Uri(scheme: 'mailto', path: email)),
+            ),
+          if (info != null && info.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Text(
+                info,
+                style: AppTextStyles.chatBody.copyWith(color: AppColors.chatDescription),
+              ),
+            ),
+          if (website != null) ...[
+            const SizedBox(height: 5),
+            Material(
+              color: AppColors.chatAccent,
               borderRadius: BorderRadius.circular(13),
-              onTap: () => context.push(AppRoutes.clinicDetails(clinic.id)),
-              child: SizedBox(
-                height: 38,
-                width: double.infinity,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  spacing: AppSpacing.s,
-                  children: [
-                    Text('View Clinic', style: AppTextStyles.chatButton),
-                    const Icon(Icons.chevron_right, size: 20, color: AppColors.onAccent),
-                  ],
+              child: InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: () => _launch(context, website),
+                child: SizedBox(
+                  height: 38,
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    spacing: AppSpacing.s,
+                    children: [
+                      Text('Visit Website', style: AppTextStyles.chatButton),
+                      const Icon(Icons.chevron_right, size: 20, color: AppColors.onAccent),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.l),
-            child: Row(
-              spacing: AppSpacing.xs,
-              children: [
-                const Icon(Icons.verified_user_outlined, size: 20, color: AppColors.chatAccentDark),
-                Text(
-                  clinic.source,
-                  style: AppTextStyles.chatMeta.copyWith(color: AppColors.chatLink),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.l),
+              child: Row(
+                spacing: AppSpacing.xs,
+                children: [
+                  const Icon(Icons.verified_user_outlined, size: 20, color: AppColors.chatAccentDark),
+                  Flexible(
+                    child: Text(
+                      website.host,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.chatMeta.copyWith(color: AppColors.chatLink),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Icon above a line of text, as in the Figma card.
 class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.icon, required this.text});
+  const _MetaLine({required this.icon, required this.text, this.onTap});
 
   final IconData icon;
   final String text;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: AppSpacing.xs,
+      children: [
+        Icon(icon, size: 20, color: AppColors.chatMeta),
+        Expanded(
+          child: Text(
+            text,
+            style: onTap == null
+                ? AppTextStyles.chatMeta
+                : AppTextStyles.chatMeta.copyWith(color: AppColors.chatLink),
+          ),
+        ),
+      ],
+    );
+
     return Padding(
       padding: const EdgeInsets.only(top: 5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppColors.chatMeta),
-          Text(text, style: AppTextStyles.chatMeta),
-        ],
-      ),
+      child: onTap == null ? row : InkWell(onTap: onTap, child: row),
+    );
+  }
+}
+
+/// The backend may send "example.com" without a scheme, which can't be launched.
+Uri? _websiteUri(String raw) {
+  final value = raw.trim();
+  if (value.isEmpty) return null;
+  final withScheme = value.startsWith('http') ? value : 'https://$value';
+  final uri = Uri.tryParse(withScheme);
+  return (uri == null || uri.host.isEmpty) ? null : uri;
+}
+
+Future<void> _launch(BuildContext context, Uri uri) async {
+  var ok = false;
+  try {
+    ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {}
+
+  if (!ok && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open this link')),
     );
   }
 }
