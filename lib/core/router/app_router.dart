@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/ai_chat/presentation/screens/ai_chat_screen.dart';
+import '../../features/ai_chat/screens/ai_chat_screen.dart';
 import '../../features/clinics/presentation/screens/clinic_details_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/medical_card/presentation/screens/medical_card_screen.dart';

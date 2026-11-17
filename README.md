@@ -2,6 +2,10 @@
 
 A new Flutter project.
 
+## To start
+
+to start this app you need to parse the backend url to the app.env file in assets folder.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
