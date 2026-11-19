@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
@@ -21,17 +22,20 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return ColoredBox(
       color: AppColors.surface,
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
+          padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.screen,
-            vertical: AppSpacing.m,
+            vertical: isLandscape ? AppSpacing.xs : AppSpacing.m,
           ),
           child: Row(
-            spacing: AppSpacing.m,
+            spacing: isLandscape ? AppSpacing.s : AppSpacing.m,
             children: [
               for (var i = 0; i < _items.length; i++)
                 Expanded(
@@ -39,6 +43,7 @@ class AppBottomNav extends StatelessWidget {
                     icon: _items[i].icon,
                     label: _items[i].label,
                     isActive: i == currentIndex,
+                    isLandscape: isLandscape,
                     onTap: () => onTap(i),
                   ),
                 ),
@@ -55,17 +60,20 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.isActive,
+    required this.isLandscape,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool isLandscape;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.field);
+
     return Material(
       color: isActive ? AppColors.soft : Colors.transparent,
       borderRadius: radius,
@@ -73,12 +81,18 @@ class _NavItem extends StatelessWidget {
         borderRadius: radius,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.s),
+          padding: EdgeInsets.all(
+            isLandscape ? AppSpacing.xxs : AppSpacing.s,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             spacing: AppSpacing.xxs,
             children: [
-              Icon(icon, size: 22, color: AppColors.navIcon),
+              Icon(
+                icon,
+                size: isLandscape ? 19 : 22,
+                color: AppColors.navIcon,
+              ),
               Text(
                 label,
                 style: AppTextStyles.meta.copyWith(

@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/theme.dart';
 
@@ -8,13 +10,12 @@ class ChatComposer extends StatefulWidget {
     super.key,
     required this.onSend,
     this.enabled = true,
+    this.compact = false,
   });
 
-  /// Called with the trimmed message text when the user taps send.
   final ValueChanged<String> onSend;
-
-  /// Set to false while waiting for a response, for example.
   final bool enabled;
+  final bool compact;
 
   @override
   State<ChatComposer> createState() => _ChatComposerState();
@@ -37,29 +38,39 @@ class _ChatComposerState extends State<ChatComposer> {
 
     widget.onSend(text);
     _controller.clear();
-    _focusNode.requestFocus(); // keep the keyboard open
+    _focusNode.requestFocus();
   }
-
-  static const _rowHeight = 46.0; // height of a one-line composer
 
   @override
   Widget build(BuildContext context) {
+    final compact = widget.compact;
+    final rowHeight = compact ? 38.0 : 46.0;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.m, AppSpacing.l, AppSpacing.card),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.l,
+        compact ? AppSpacing.xs : AppSpacing.m,
+        AppSpacing.l,
+        compact ? AppSpacing.s : AppSpacing.card,
+      ),
       child: ListenableBuilder(
         listenable: _focusNode,
         builder: (context, child) {
           final focused = _focusNode.hasFocus;
+
           return AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.fromLTRB(AppSpacing.m, 0, AppSpacing.xxs, 0),
-            // Base 1px border, always there. Takes no extra space when focused.
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.m,
+              0,
+              AppSpacing.xxs,
+              0,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(17),
               border: Border.all(color: AppColors.chatBorder),
             ),
-            // Focus ring painted on top, so changing its width never shifts the layout.
             foregroundDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(17),
               border: Border.all(
@@ -73,36 +84,57 @@ class _ChatComposerState extends State<ChatComposer> {
           );
         },
         child: Row(
-          // Centers the send button against the whole field, including multi-line text
           crossAxisAlignment: CrossAxisAlignment.center,
           spacing: AppSpacing.s,
           children: [
             Expanded(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: _rowHeight),
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  enabled: widget.enabled,
-                  minLines: 1,
-                  maxLines: 5,
-                  keyboardType: TextInputType.multiline,
-                  textCapitalization: TextCapitalization.sentences,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: AppTextStyles.body,
-                  decoration: InputDecoration(
-                    hintText: 'Message HealthFinder...',
-                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.chatPlaceholder),
-                    filled: false,
-                    // Every state is set explicitly, so the theme can't add a focus border.
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                constraints: BoxConstraints(minHeight: rowHeight),
+                child: Focus(
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent &&
+                        (event.logicalKey == LogicalKeyboardKey.enter ||
+                            event.logicalKey ==
+                                LogicalKeyboardKey.numpadEnter)) {
+                      if (HardwareKeyboard.instance.isShiftPressed) {
+                        return KeyEventResult.ignored;
+                      }
+
+                      _submit();
+                      return KeyEventResult.handled;
+                    }
+
+                    return KeyEventResult.ignored;
+                  },
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    enabled: widget.enabled,
+                    minLines: 1,
+                    maxLines: 5,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _submit(),
+                    textCapitalization: TextCapitalization.sentences,
+                    textAlignVertical: TextAlignVertical.center,
+                    style: AppTextStyles.body,
+                    decoration: InputDecoration(
+                      hintText: 'Message HealthFinder...',
+                      hintStyle: AppTextStyles.body.copyWith(
+                        color: AppColors.chatPlaceholder,
+                      ),
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: compact ? 8 : 14,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -110,7 +142,9 @@ class _ChatComposerState extends State<ChatComposer> {
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
               builder: (context, value, _) {
-                final canSend = widget.enabled && value.text.trim().isNotEmpty;
+                final canSend =
+                    widget.enabled && value.text.trim().isNotEmpty;
+
                 return _SendButton(onTap: canSend ? _submit : null);
               },
             ),
@@ -119,7 +153,7 @@ class _ChatComposerState extends State<ChatComposer> {
       ),
     );
   }
-  }
+}
 
 class _SendButton extends StatelessWidget {
   const _SendButton({required this.onTap});
@@ -142,7 +176,11 @@ class _SendButton extends StatelessWidget {
           child: const SizedBox(
             width: 38,
             height: 38,
-            child: Icon(Icons.arrow_forward, size: 20, color: AppColors.onAccent),
+            child: Icon(
+              Icons.arrow_forward,
+              size: 20,
+              color: AppColors.onAccent,
+            ),
           ),
         ),
       ),
