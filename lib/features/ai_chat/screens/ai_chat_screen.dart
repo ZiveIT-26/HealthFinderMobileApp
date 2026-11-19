@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:health_finder/core/network/chat_api.dart';
@@ -25,8 +26,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final _scroll = ScrollController();
   final _backendUrl = dotenv.get("BACKEND_URL");
 
-  /// Height of the bottom block, so the message list can end above it.
-  double _bottomBlockHeight = 0;
+  double _composerHeight = 0;
 
   @override
   void initState() {
@@ -43,7 +43,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
     super.dispose();
   }
 
-  /// Runs on every notifyListeners(), so the view follows streaming tokens.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
@@ -53,8 +52,33 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   void _send(String text) => _chat.send(text);
 
+  void _updateComposerHeight(Size size) {
+    if ((size.height - _composerHeight).abs() < 0.5) return;
+
+    setState(() => _composerHeight = size.height);
+  }
+
+  Widget _buildComposer(bool isLandscape) {
+    return MeasureSize(
+      onChange: _updateComposerHeight,
+      child: ChatComposer(
+        enabled: !_chat.loading,
+        onSend: _send,
+        compact: isLandscape,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape =
+        mediaQuery.orientation == Orientation.landscape;
+    final isKeyboardVisible = mediaQuery.viewInsets.bottom > 0;
+
+    final animationDuration =
+        isKeyboardVisible ? Duration.zero : _moveDuration;
+
     return ColoredBox(
       color: AppColors.surface,
       child: SafeArea(
@@ -67,61 +91,69 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 listenable: _chat,
                 builder: (context, _) {
                   final isEmpty = _chat.messages.isEmpty;
+                  final showWelcome = isEmpty && !isKeyboardVisible;
 
                   return Stack(
                     children: [
-                      // Messages fade in as the composer leaves the center.
                       Positioned.fill(
                         child: IgnorePointer(
                           ignoring: isEmpty,
                           child: AnimatedOpacity(
-                            duration: _moveDuration,
+                            duration: animationDuration,
                             curve: Curves.easeIn,
                             opacity: isEmpty ? 0 : 1,
                             child: _buildMessageList(),
                           ),
                         ),
                       ),
-                      // One block: greeting, composer, suggestions.
-                      AnimatedAlign(
-                        duration: _moveDuration,
-                        curve: _moveCurve,
-                        alignment: isEmpty
-                            ? const Alignment(0, -0.15)
-                            : Alignment.bottomCenter,
-                        child: MeasureSize(
-                          onChange: (size) {
-                            if (size.height == _bottomBlockHeight) return;
-                            setState(() => _bottomBlockHeight = size.height);
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _Collapsible(
-                                visible: isEmpty,
-                                duration: _moveDuration,
-                                curve: _moveCurve,
-                                child: const ChatGreeting(),
+
+                      if (showWelcome)
+                        Positioned.fill(
+                          child: AnimatedAlign(
+                            duration: animationDuration,
+                            curve: _moveCurve,
+                            alignment: Alignment(
+                              0,
+                              isLandscape ? -0.05 : -0.15,
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: [
+                                  ChatGreeting(
+                                    compact: isLandscape,
+                                  ),
+                                  _buildComposer(isLandscape),
+                                  ChatSuggestions(
+                                    onSelected: _send,
+                                    compact: isLandscape,
+                                  ),
+                                ],
                               ),
-                              ChatComposer(
-                                enabled: !_chat.loading,
-                                onSend: _send,
-                              ),
-                              _Collapsible(
-                                visible: isEmpty,
-                                duration: _moveDuration,
-                                curve: _moveCurve,
-                                child: ChatSuggestions(onSelected: _send),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   );
                 },
               ),
+            ),
+
+            // Keep the composer outside the message area when
+            // a conversation exists or the keyboard is visible.
+            ListenableBuilder(
+              listenable: _chat,
+              builder: (context, _) {
+                final isEmpty = _chat.messages.isEmpty;
+
+                if (isEmpty && !isKeyboardVisible) {
+                  return const SizedBox.shrink();
+                }
+
+                return _buildComposer(isLandscape);
+              },
             ),
           ],
         ),
@@ -134,48 +166,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
     return ListView.separated(
       controller: _scroll,
-      // Bottom padding = the composer block, so the last message isn't covered.
-      padding: EdgeInsets.fromLTRB(17, 28, 17, _bottomBlockHeight + AppSpacing.l),
+      padding: EdgeInsets.fromLTRB(
+        17,
+        28,
+        17,
+        _composerHeight + AppSpacing.l,
+      ),
       itemCount: messages.length,
       separatorBuilder: (_, _) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
-        final m = messages[index];
+        final message = messages[index];
         final isLast = index == messages.length - 1;
 
-        return m.isUser
-            ? UserBubble(text: m.text)
+        return message.isUser
+            ? UserBubble(text: message.text)
             : AssistantReply(
-                text: m.text,
-                doctors: m.doctors,
+                text: message.text,
+                doctors: message.doctors,
                 isStreaming: _chat.loading && isLast,
               );
       },
-    );
-  }
-}
-
-/// Fades and collapses its child to zero height when not visible.
-class _Collapsible extends StatelessWidget {
-  const _Collapsible({
-    required this.visible,
-    required this.child,
-    required this.duration,
-    required this.curve,
-  });
-
-  final bool visible;
-  final Widget child;
-  final Duration duration;
-  final Curve curve;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedCrossFade(
-      duration: duration,
-      sizeCurve: curve,
-      crossFadeState: visible ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      firstChild: child,
-      secondChild: const SizedBox(width: double.infinity),
     );
   }
 }
