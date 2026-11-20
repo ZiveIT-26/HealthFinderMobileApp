@@ -9,15 +9,17 @@ class ChatGreeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.l),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        spacing: AppSpacing.m,
-        children: [
-          const ChatAvatar(size: 64, radius: 20),
-          Text('How can I help?', style: AppTextStyles.chatSender),
-        ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.l),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: AppSpacing.m,
+          children: [
+            const ChatAvatar(size: 64, radius: 20),
+            Text('How can I help?', style: AppTextStyles.chatSender),
+          ],
+        ),
       ),
     );
   }

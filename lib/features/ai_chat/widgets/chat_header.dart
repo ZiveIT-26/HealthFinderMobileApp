@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:health_finder/core/widgets/app_button.dart';
 
 import '../../../core/theme/theme.dart';
 
 /// Chat header: robot avatar and title.
 class ChatHeader extends StatelessWidget {
-  const ChatHeader({super.key});
+  const ChatHeader({super.key, this.onNewChat});
+
+  /// Null disables the button (e.g. while a reply is streaming).
+  final VoidCallback? onNewChat;
 
   @override
   Widget build(BuildContext context) {
@@ -14,17 +18,19 @@ class ChatHeader extends StatelessWidget {
         vertical: AppSpacing.m,
       ),
       child: Row(
-        spacing: AppSpacing.m,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const ChatAvatar(size: 48, radius: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('AI Health Assistant', style: AppTextStyles.chatTitle),
-                Text('Care guidance & clinic finder', style: AppTextStyles.chatSubtitle),
-              ],
-            ),
+          AppButton(
+            icon: Icons.history,
+            onTap: onNewChat,
+            size: AppButtonSize.medium,
+            tooltip: 'Chats history',
+          ),
+          AppButton(
+            icon: Icons.add,
+            onTap: onNewChat,
+            size: AppButtonSize.medium,
+            tooltip: 'New chat',
           ),
         ],
       ),

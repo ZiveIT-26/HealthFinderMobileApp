@@ -68,6 +68,11 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  void clear() {
+    messages.clear();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _sub?.cancel();

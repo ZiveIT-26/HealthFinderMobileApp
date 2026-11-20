@@ -1,5 +1,6 @@
 /// All route paths in one place, so screens never hardcode strings.
 abstract final class AppRoutes {
+  static const welcome = '/welcome';
   static const home = '/home';
   static const chat = '/chat';
   static const profile = '/profile';
