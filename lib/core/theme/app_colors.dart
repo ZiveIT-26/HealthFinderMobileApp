@@ -57,4 +57,8 @@ abstract final class AppColors {
   static const info = weather; // "Low", "2 · Low"
   static const warning = Color(0xFF8D580A); // "Moderate"
   // TODO: confirm High / Very high / Extreme colors with design
+
+  /// Bottom fade behind the language picker.
+  static const Color fadeStart = Color(0x00D1A7E7); // rgba(209,167,231,0)
+  static const Color fadeEnd = Color(0xFFD0A3EA);
 }
