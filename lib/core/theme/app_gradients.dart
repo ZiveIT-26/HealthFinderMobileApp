@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Widget backgrounds from Figma. Each background is a linear gradient
 /// with several soft elliptical radial glows on top.

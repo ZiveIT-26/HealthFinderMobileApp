@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Colors from Figma (HealthFinder / Home 06).
 /// Named by role, not by hue.

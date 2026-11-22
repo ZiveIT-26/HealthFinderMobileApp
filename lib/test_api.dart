@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'chat/chat_screen.dart';
 
 // Choose the right one for how you run the app (see Step 8)

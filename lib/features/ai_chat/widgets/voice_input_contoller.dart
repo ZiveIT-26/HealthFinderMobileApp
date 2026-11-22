@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -77,10 +77,10 @@ class VoiceInputController extends ChangeNotifier {
     try {
       await _speech.listen(
         onResult: _handleResult,
-        localeId: localeId,
-        pauseFor: pauseFor,
-        listenFor: listenFor,
         listenOptions: SpeechListenOptions(
+          localeId: localeId,
+          pauseFor: pauseFor,
+          listenFor: listenFor,
           partialResults: true,
           cancelOnError: true,
           onDevice: onDeviceOnly,
