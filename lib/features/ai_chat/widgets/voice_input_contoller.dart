@@ -77,10 +77,10 @@ class VoiceInputController extends ChangeNotifier {
     try {
       await _speech.listen(
         onResult: _handleResult,
-        localeId: localeId,
-        pauseFor: pauseFor,
-        listenFor: listenFor,
         listenOptions: SpeechListenOptions(
+          localeId: localeId,
+          pauseFor: pauseFor,
+          listenFor: listenFor,
           partialResults: true,
           cancelOnError: true,
           onDevice: onDeviceOnly,
