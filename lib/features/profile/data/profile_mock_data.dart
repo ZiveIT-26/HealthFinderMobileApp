@@ -1,7 +1,7 @@
 /// Mock profile until the backend is ready.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/widgets/info_rows_card.dart';

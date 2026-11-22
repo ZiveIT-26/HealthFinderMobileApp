@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lays [child] out at the Figma design size and scales it uniformly
 /// to the available space, so the whole screen fits without scrolling.
