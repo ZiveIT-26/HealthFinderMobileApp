@@ -43,6 +43,7 @@ dependencies:
   shared_preferences: ^2.3.0
   
   material_ui: ^1.11.1
+  flutter_secure_storage: ^11.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
