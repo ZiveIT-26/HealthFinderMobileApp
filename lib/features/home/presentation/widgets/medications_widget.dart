@@ -22,7 +22,7 @@ class MedicationsWidget extends StatelessWidget {
           WidgetHeader(
             title: "Today's Medications",
             action: WidgetArrowButton(
-              color: AppColors.medications,
+              color: AppColors.actionGreen,
               label: '${data.moreCount} more',
             ),
           ),
@@ -49,7 +49,7 @@ class _ProgressCard extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       child: Column(
@@ -62,7 +62,7 @@ class _ProgressCard extends StatelessWidget {
               Text("Today's progress", style: AppTextStyles.body),
               Text(
                 '$taken of $total taken',
-                style: AppTextStyles.label.copyWith(color: AppColors.success),
+                style: AppTextStyles.label.copyWith(color: AppColors.actionBlue),
               ),
             ],
           ),
@@ -75,7 +75,7 @@ class _ProgressCard extends StatelessWidget {
               child: FractionallySizedBox(
                 widthFactor: total == 0 ? 0 : taken / total,
                 heightFactor: 1,
-                child: const ColoredBox(color: AppColors.success),
+                child: const ColoredBox(color: AppColors.actionBlue),
               ),
             ),
           ),
@@ -115,9 +115,9 @@ class _MedicationRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.brand, width: 1.4),
+                  border: Border.all(color: AppColors.colorBrand, width: 1.4),
                 ),
               ),
             ),

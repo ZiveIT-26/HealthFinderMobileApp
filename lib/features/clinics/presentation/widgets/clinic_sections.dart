@@ -87,7 +87,7 @@ class _ContactRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: AppSpacing.m,
         children: [
-          Icon(icon, size: 20, color: AppColors.brand),
+          Icon(icon, size: 20, color: AppColors.colorBrand),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +145,7 @@ class ClinicSource extends StatelessWidget {
           Text(
             clinic.sourceLabel,
             style: AppTextStyles.detailValue.copyWith(
-              color: AppColors.brand,
+              color: AppColors.colorBrand,
               fontWeight: FontWeight.w600,
             ),
           ),

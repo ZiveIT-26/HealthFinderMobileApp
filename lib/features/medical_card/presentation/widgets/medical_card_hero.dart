@@ -11,7 +11,7 @@ class MedicalCardHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 25, 18, 22),
       decoration: BoxDecoration(
-        gradient: AppGradients.medicalCardHero,
+        color: AppColors.purpleSoft,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(color: Color(0x0F6D5085), offset: Offset(0, 7), blurRadius: 20),
@@ -40,10 +40,10 @@ class MedicalCardHero extends StatelessWidget {
               width: 47,
               height: 47,
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.57),
+                color: AppColors.white.withValues(alpha: 0.57),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.shield_outlined, size: 20, color: AppColors.brand),
+              child: const Icon(Icons.shield_outlined, size: 20, color: AppColors.colorBrand),
             ),
           ),
         ],

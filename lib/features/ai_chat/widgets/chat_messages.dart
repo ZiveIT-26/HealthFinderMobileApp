@@ -30,7 +30,7 @@ class UserBubble extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: AppTextStyles.chatBody.copyWith(color: AppColors.chatInk),
+            style: AppTextStyles.chatBody.copyWith(color: AppColors.ink),
           ),
         ),
       ),
@@ -95,7 +95,7 @@ class _TypingIndicator extends StatelessWidget {
       child: SizedBox(
         width: 18,
         height: 18,
-        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.chatAccent),
+        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.colorBrand),
       ),
     );
   }

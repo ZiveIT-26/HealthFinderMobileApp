@@ -10,10 +10,10 @@ import 'app_text_styles.dart';
 abstract final class AppTheme {
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.brand,
-      primary: AppColors.brand,
-      onPrimary: AppColors.onAccent,
-      surface: AppColors.surface,
+      seedColor: AppColors.colorBrand,
+      primary: AppColors.colorBrand,
+      onPrimary: AppColors.textOnAction,
+      surface: AppColors.white,
       onSurface: AppColors.ink,
     );
 
@@ -25,7 +25,7 @@ abstract final class AppTheme {
       fontFamily: GoogleFonts.inter().fontFamily,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.white,
         hintStyle: AppTextStyles.body,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.m,
@@ -37,7 +37,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.field),
-          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.colorBrand, width: 1.5),
         ),
       ),
     );

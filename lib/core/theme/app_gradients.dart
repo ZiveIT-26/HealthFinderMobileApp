@@ -95,35 +95,42 @@ abstract final class AppGradients {
     colors: [Color(0xFFF6F0FA), Color(0xFFEEE6F8)],
   );
 
-  /// Medical Card: hero card at the top.
-  static const medicalCardHero = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFEDE3F6), Color(0xFFE6D9F2), Color(0xFFF1ECFA)],
-    stops: [0, 0.6, 1],
-  );
-
   // Weather metric tile backgrounds: color at the top fading to white.
   static const metricLow = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFC6EDFF), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFB1E7FF), Color(0xFFFFFFFF)],
   ); // UV Low, Heatwave Low
   static const metricGood = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFD5FFC6), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFC6FFB1), Color(0xFFFFFFFF)],
   ); // Air Quality Good
   static const metricModerate = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFFFF1C6), Color(0xFFFFFFFF)],
+    colors: [Color(0xFFFFECB1), Color(0xFFFFFFFF)],
   ); // Pollen Moderate
   static const metricHigh = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFFFC6D8), Color(0xFFFFFFFF)],
-  ); // High / Very high
+    colors: [Color(0xFFFFD1B1), Color(0xFFFFFFFF)],
+  ); 
+  static const metricVeryHigh = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFFFB1CA), Color(0xFFFFFFFF)],
+  );
+  static const metricExtreme = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFCDA4FF), Color(0xFFFFE1E1)],
+  );
+  static const metricNotAvailable = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFDBE5F2), Color(0xFFFFE1E1)],
+  );
   // Metrics without a status (pressure, humidity) use AppColors.surface.
 }
 

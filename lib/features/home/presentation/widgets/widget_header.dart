@@ -38,7 +38,7 @@ class WidgetArrowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.control);
     return Material(
-      color: AppColors.surface,
+      color: AppColors.white,
       borderRadius: radius,
       child: InkWell(
         borderRadius: radius,

@@ -41,7 +41,7 @@ class _MoodWidgetState extends State<MoodWidget> {
           children: [
             const WidgetHeader(
               title: 'Mood Today',
-              action: WidgetArrowButton(color: AppColors.mood),
+              action: WidgetArrowButton(color: AppColors.actionPink),
             ),
             // Options share the available width equally.
             Row(
@@ -124,7 +124,7 @@ class _NoteField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.m, 5, 5, 5),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       child: Row(
@@ -146,7 +146,7 @@ class _NoteField extends StatelessWidget {
           Opacity(
             opacity: controller.canSave ? 1 : 0.4,
             child: Material(
-              color: status == MoodSaveStatus.saving ? AppColors.moodPressed : AppColors.mood,
+              color: status == MoodSaveStatus.saving ? AppColors.actionPinkPressed : AppColors.actionPink,
               borderRadius: BorderRadius.circular(AppRadius.control),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.control),
@@ -157,7 +157,7 @@ class _NoteField extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     label,
-                    style: AppTextStyles.label.copyWith(color: AppColors.onAccent),
+                    style: AppTextStyles.label.copyWith(color: AppColors.textOnAction),
                   ),
                 ),
               ),

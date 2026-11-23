@@ -38,7 +38,7 @@ class HomeScreen extends StatelessWidget {
                         TextSpan(text: 'Health'),
                         TextSpan(
                           text: 'Finder',
-                          style: TextStyle(color: AppColors.brand),
+                          style: TextStyle(color: AppColors.colorBrand),
                         ),
                       ],
                     ),

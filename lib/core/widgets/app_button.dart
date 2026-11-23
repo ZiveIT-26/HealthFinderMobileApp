@@ -88,8 +88,8 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (background, foreground) = switch (variant) {
-      AppButtonVariant.filled => (AppColors.brandDark, AppColors.onAccent),
-      AppButtonVariant.soft => (AppColors.soft, AppColors.brandDark),
+      AppButtonVariant.filled => (AppColors.colorPressed, AppColors.textOnAction),
+      AppButtonVariant.soft => (AppColors.colorSoft, AppColors.colorPressed),
     };
 
     final radius = BorderRadius.circular(size.radius);

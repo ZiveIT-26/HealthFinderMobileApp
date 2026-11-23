@@ -21,7 +21,7 @@ class DoctorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.card, 17, AppSpacing.card, AppSpacing.card),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(color: Color(0x0F6D5085), offset: Offset(0, 7), blurRadius: 10),
@@ -40,7 +40,7 @@ class DoctorCard extends StatelessWidget {
           if (doctor.doctorName?.isNotEmpty ?? false)
             Text(
               doctor.name, // the place, smaller, under the doctor's name
-              style: AppTextStyles.chatMeta.copyWith(color: AppColors.chatFootnote),
+              style: AppTextStyles.chatMeta.copyWith(color: AppColors.secondaryText),
             ), 
           if (doctor.address.isNotEmpty)
             _MetaLine(icon: Icons.location_on_outlined, text: doctor.address),
@@ -61,13 +61,13 @@ class DoctorCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Text(
                 info,
-                style: AppTextStyles.chatBody.copyWith(color: AppColors.chatDescription),
+                style: AppTextStyles.chatBody.copyWith(color: AppColors.secondaryText),
               ),
             ),
           if (website != null) ...[
             const SizedBox(height: 5),
             Material(
-              color: AppColors.chatAccent,
+              color: AppColors.colorBrand,
               borderRadius: BorderRadius.circular(13),
               child: InkWell(
                 borderRadius: BorderRadius.circular(13),
@@ -80,7 +80,7 @@ class DoctorCard extends StatelessWidget {
                     spacing: AppSpacing.s,
                     children: [
                       Text('Visit Website', style: AppTextStyles.chatButton),
-                      const Icon(Icons.chevron_right, size: 20, color: AppColors.onAccent),
+                      const Icon(Icons.chevron_right, size: 20, color: AppColors.textOnAction),
                     ],
                   ),
                 ),
@@ -91,7 +91,7 @@ class DoctorCard extends StatelessWidget {
               child: Row(
                 spacing: AppSpacing.xs,
                 children: [
-                  const Icon(Icons.verified_user_outlined, size: 20, color: AppColors.chatAccentDark),
+                  const Icon(Icons.verified_user_outlined, size: 20, color: AppColors.colorBrand),
                   Flexible(
                     child: Text(
                       website.host,
@@ -122,7 +122,7 @@ class _MetaLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: AppSpacing.xs,
       children: [
-        Icon(icon, size: 20, color: AppColors.chatMeta),
+        Icon(icon, size: 20, color: AppColors.secondaryText),
         Expanded(
           child: Text(
             text,
