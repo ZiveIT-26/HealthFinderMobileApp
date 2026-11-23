@@ -92,7 +92,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.surface,
+      color: AppColors.white,
       child: SafeArea(
         bottom: false,
         child: Column(

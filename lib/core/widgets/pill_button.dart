@@ -10,16 +10,16 @@ class PillButton extends StatelessWidget {
     required this.icon,
     required this.label,
     this.onTap,
-  })  : background = AppColors.brand,
-        foreground = AppColors.onAccent;
+  })  : background = AppColors.colorBrand,
+        foreground = AppColors.textOnAction;
 
   const PillButton.soft({
     super.key,
     required this.icon,
     required this.label,
     this.onTap,
-  })  : background = AppColors.soft,
-        foreground = AppColors.brand;
+  })  : background = AppColors.colorSoft,
+        foreground = AppColors.colorPressed;
 
   final IconData icon;
   final String label;

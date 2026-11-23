@@ -22,7 +22,7 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.surface,
+      color: AppColors.white,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -67,7 +67,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.field);
     return Material(
-      color: isActive ? AppColors.soft : Colors.transparent,
+      color: isActive ? AppColors.colorSoft : Colors.transparent,
       borderRadius: radius,
       child: InkWell(
         borderRadius: radius,
@@ -78,11 +78,11 @@ class _NavItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: AppSpacing.xxs,
             children: [
-              Icon(icon, size: 22, color: AppColors.navIcon),
+              Icon(icon, size: 22, color: AppColors.colorBrand),
               Text(
                 label,
                 style: AppTextStyles.meta.copyWith(
-                  color: isActive ? AppColors.brand : AppColors.muted,
+                  color: isActive ? AppColors.colorBrand : AppColors.secondaryText,
                 ),
               ),
             ],

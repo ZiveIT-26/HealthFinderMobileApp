@@ -40,14 +40,14 @@ class _BackButton extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: radius,
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
           child: const SizedBox.square(
             dimension: 36,
-            child: Icon(Icons.chevron_left, size: 20, color: AppColors.brand),
+            child: Icon(Icons.chevron_left, size: 20, color: AppColors.colorBrand),
           ),
         ),
       ),

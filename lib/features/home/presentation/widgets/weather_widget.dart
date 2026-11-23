@@ -22,7 +22,7 @@ class WeatherWidget extends StatelessWidget {
         children: [
           const WidgetHeader(
             title: 'Weather & Health',
-            action: WidgetArrowButton(color: AppColors.weather),
+            action: WidgetArrowButton(color: AppColors.actionBlue),
           ),
           const SizedBox(height: AppSpacing.s),
           Row(

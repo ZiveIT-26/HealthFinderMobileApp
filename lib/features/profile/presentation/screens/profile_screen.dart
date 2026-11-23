@@ -11,7 +11,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.surface,
+      color: AppColors.white,
       child: SafeArea(
         bottom: false,
         child: Column(

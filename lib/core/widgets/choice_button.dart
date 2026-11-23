@@ -23,7 +23,7 @@ class ChoiceButton extends StatelessWidget {
     final borderRadius = BorderRadius.circular(_radius);
 
     return Material(
-      color: AppColors.brandDark,
+      color: AppColors.colorPressed,
       borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       child: InkWell(

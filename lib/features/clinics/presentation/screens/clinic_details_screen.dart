@@ -17,7 +17,7 @@ class ClinicDetailsScreen extends StatelessWidget {
     final clinic = ClinicMockData.byId(clinicId);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: Column(
           children: [

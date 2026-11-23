@@ -120,7 +120,7 @@ class _ChatComposerState extends State<ChatComposer> {
             padding: const EdgeInsets.fromLTRB(AppSpacing.m, 0, AppSpacing.xxs, 0),
             // Base 1px border, always there. Takes no extra space when focused.
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.white,
               borderRadius: BorderRadius.circular(_fieldRadius),
               border: Border.all(color: AppColors.chatBorder),
             ),
@@ -130,8 +130,8 @@ class _ChatComposerState extends State<ChatComposer> {
               border: Border.all(
                 width: 2,
                 color: focused
-                    ? AppColors.chatAccent
-                    : AppColors.chatAccent.withValues(alpha: 0),
+                    ? AppColors.colorBrand
+                    : AppColors.colorBrand.withValues(alpha: 0),
               ),
             ),
             child: child,
@@ -210,8 +210,8 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(13);
     final background =
-        filled ? AppColors.chatAccent : AppColors.chatAccent.withValues(alpha: 0.12);
-    final foreground = filled ? AppColors.onAccent : AppColors.chatAccent;
+        filled ? AppColors.colorBrand : AppColors.colorBrand.withValues(alpha: 0.12);
+    final foreground = filled ? AppColors.textOnAction : AppColors.colorBrand;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 150),

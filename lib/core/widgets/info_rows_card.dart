@@ -32,7 +32,7 @@ class InfoRowsCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: tinted ? AppColors.infoCardTint : AppColors.surface,
+        color: tinted ? AppColors.purpleSoft : AppColors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(color: Color(0x0F6D5085), offset: Offset(0, 7), blurRadius: 20),
@@ -46,7 +46,7 @@ class InfoRowsCard extends StatelessWidget {
               decoration: i == 0
                   ? null
                   : const BoxDecoration(
-                      border: Border(top: BorderSide(color: AppColors.divider)),
+                      border: Border(top: BorderSide(color: AppColors.border)),
                     ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

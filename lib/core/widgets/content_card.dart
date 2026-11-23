@@ -19,7 +19,7 @@ class ContentCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(color: Color(0x0F6D5085), offset: Offset(0, 7), blurRadius: 20),

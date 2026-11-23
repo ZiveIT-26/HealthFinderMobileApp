@@ -45,7 +45,7 @@ class AiAssistantWidget extends StatelessWidget {
                     title: 'AI Health Assistant',
                     // Switches to the Chat tab (bottom navigation updates too).
                     action: WidgetArrowButton(
-                      color: AppColors.ai,
+                      color: AppColors.actionPurple,
                       onTap: () => context.go(AppRoutes.chat),
                     ),
                   ),
@@ -75,7 +75,7 @@ class _QuestionField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.m, 5, 5, 5),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       child: Row(
@@ -88,13 +88,13 @@ class _QuestionField extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.ai,
+              color: AppColors.actionPurple,
               borderRadius: BorderRadius.circular(AppRadius.control),
             ),
             child: const Icon(
               Icons.arrow_forward,
               size: 20,
-              color: AppColors.onAccent,
+              color: AppColors.textOnAction,
             ),
           ),
         ],

@@ -29,10 +29,10 @@ class ProfileHero extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.78),
+              color: AppColors.white.withValues(alpha: 0.78),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.person_outline, size: 20, color: AppColors.brand),
+            child: const Icon(Icons.person_outline, size: 20, color: AppColors.colorBrand),
           ),
           Expanded(
             child: Column(
@@ -84,7 +84,7 @@ class SettingsRow extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: AppColors.surface,
+        color: AppColors.white,
         borderRadius: radius,
         child: InkWell(
           borderRadius: radius,
@@ -99,10 +99,10 @@ class SettingsRow extends StatelessWidget {
                   width: 43,
                   height: 43,
                   decoration: BoxDecoration(
-                    color: AppColors.soft,
+                    color: AppColors.colorSoft,
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: Icon(item.icon, size: 20, color: AppColors.brand),
+                  child: Icon(item.icon, size: 20, color: AppColors.colorBrand),
                 ),
                 Expanded(
                   child: Column(
@@ -114,7 +114,7 @@ class SettingsRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 20, color: AppColors.chatText),
+                const Icon(Icons.chevron_right, size: 20, color: AppColors.ink),
               ],
             ),
           ),
