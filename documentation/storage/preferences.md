@@ -3,6 +3,8 @@
 Small, non-secret settings of the mobile app. Code lives in
 `HealthFinderMobileApp/lib/core/storage/`.
 
+Diagrams: [storage-schemas.drawio](storage-schemas.drawio), page "Preferences".
+
 - [Keys](#keys)
 - [Setup](#setup)
 - [Reading and writing](#reading-and-writing)
