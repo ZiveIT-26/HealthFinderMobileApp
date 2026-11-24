@@ -52,13 +52,23 @@ class SecureStore {
   /// Generated randomly on first use and returned unchanged afterwards.
   /// The result is cached, so concurrent callers get the same key.
   ///
-  /// If a stored key cannot be read (see [_read]), a new one is generated.
-  /// The existing database then cannot be opened with it and has to be
-  /// recreated by the database layer.
-  Future<String> databaseKey() => _databaseKey ??= _loadOrCreateDatabaseKey();
+  /// Throws if the stored key cannot be read. A failure is not cached, so the
+  /// next call tries again.
+  Future<String> databaseKey() async {
+    final pending = _databaseKey ??= _loadOrCreateDatabaseKey();
+    try {
+      return await pending;
+    } catch (_) {
+      if (identical(_databaseKey, pending)) _databaseKey = null;
+      rethrow;
+    }
+  }
 
   Future<String> _loadOrCreateDatabaseKey() async {
-    final existing = await _read(_Keys.databaseKey);
+    // Read errors are not treated as "no key": a new key would make the
+    // existing database unreadable for good. On iOS, for example, a read
+    // fails before the first unlock after a reboot, and works again later.
+    final existing = await _storage.read(key: _Keys.databaseKey);
     if (existing != null) return existing;
 
     final key = _generateKey();
@@ -87,16 +97,17 @@ class SecureStore {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Reads a value, treating an unreadable one as missing.
+  /// Reads a token, treating an unreadable one as missing.
   ///
-  /// A value can become unreadable when the platform key it was encrypted
-  /// with is gone (e.g. Android data restored on another device). The broken
-  /// value is deleted so it does not fail again on every read.
+  /// A read can fail temporarily (iOS before the first unlock after a
+  /// reboot) or permanently (the platform key the value was encrypted with
+  /// is gone). Either way the caller behaves as signed out. The value is not
+  /// deleted, so a temporary failure does not end the session; a broken
+  /// value is replaced on the next sign-in.
   Future<String?> _read(String key) async {
     try {
       return await _storage.read(key: key);
     } on PlatformException {
-      await _storage.delete(key: key);
       return null;
     }
   }
