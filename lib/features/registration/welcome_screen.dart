@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:health_finder/features/registration/language_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:health_finder/features/registration/language_picker.dart';
 
