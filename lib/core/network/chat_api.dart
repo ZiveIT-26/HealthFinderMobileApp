@@ -3,8 +3,13 @@ import 'package:http/http.dart' as http;
 import 'chat_models.dart';
 
 class ChatApi {
-  ChatApi(this.baseUrl);
+  /// [clientFactory] creates the HTTP client for each call; pass
+  /// `authController.createClient` to send the user's token.
+  ChatApi(this.baseUrl, {http.Client Function()? clientFactory})
+      : _newClient = clientFactory ?? http.Client.new;
+
   final String baseUrl;
+  final http.Client Function() _newClient;
 
   /// POST /chat -> returns streamId + sessionId
   Future<({String streamId, String sessionId})> startChat(
@@ -13,15 +18,21 @@ class ChatApi {
     double? lat,
     double? lon,
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/chat'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'prompt': prompt,
-        'sessionId': ?sessionId,
-        if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
-      }),
-    );
+    final client = _newClient();
+    final http.Response res;
+    try {
+      res = await client.post(
+        Uri.parse('$baseUrl/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'prompt': prompt,
+          'sessionId': ?sessionId,
+          if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
+        }),
+      );
+    } finally {
+      client.close();
+    }
 
     // NestJS POST returns 201 by default, so accept any 2xx
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -37,7 +48,7 @@ class ChatApi {
 
   /// GET /chat/stream/:id -> Server-Sent Events, turned into a Dart Stream
   Stream<ChatEvent> stream(String streamId) async* {
-    final client = http.Client();
+    final client = _newClient();
     try {
       final req = http.Request('GET', Uri.parse('$baseUrl/chat/stream/$streamId'))
         ..headers['Accept'] = 'text/event-stream'

@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../core/auth/auth_controller.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_rows_card.dart';
 import '../../data/profile_mock_data.dart';
 import '../widgets/profile_sections.dart';
@@ -17,18 +19,22 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30, 25, 30, 20),
-              child: Text('Profile', style: AppTextStyles.tabTitle),
-            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.l, AppSpacing.l, 42),
                 children: [
                   for (final section in [
-                    const ProfileHero(
-                      name: ProfileMockData.name,
-                      subtitle: ProfileMockData.subtitle,
+                    // Account data from the last sign-in; rebuilds when it changes.
+                    ListenableBuilder(
+                      listenable: authController,
+                      builder: (context, _) {
+                        final user = authController.user;
+                        return ProfileHero(
+                          name: user?.name ?? ProfileMockData.name,
+                          subtitle: user?.email ?? ProfileMockData.subtitle,
+                          avatarUrl: user?.avatarUrl,
+                        );
+                      },
                     ),
                     const InfoRowsCard(
                       rows: ProfileMockData.details,
@@ -38,6 +44,12 @@ class ProfileScreen extends StatelessWidget {
                       SettingsGroupTitle(group.title),
                       for (final item in group.items) SettingsRow(item: item),
                     ],
+                    AppButton.soft(
+                      label: 'Sign out',
+                      size: AppButtonSize.large,
+                      expanded: true,
+                      onTap: authController.signOut,
+                    ),
                   ])
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),

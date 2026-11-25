@@ -6,10 +6,18 @@ import '../../data/profile_mock_data.dart';
 
 /// Top card with avatar, name and subtitle.
 class ProfileHero extends StatelessWidget {
-  const ProfileHero({super.key, required this.name, required this.subtitle});
+  const ProfileHero({
+    super.key,
+    required this.name,
+    required this.subtitle,
+    this.avatarUrl,
+  });
 
   final String name;
   final String subtitle;
+
+  /// Google profile photo; the placeholder icon is shown without it or offline.
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -28,11 +36,18 @@ class ProfileHero extends StatelessWidget {
           Container(
             width: 55,
             height: 55,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppColors.white.withValues(alpha: 0.78),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.person_outline, size: 20, color: AppColors.colorBrand),
+            child: avatarUrl == null
+                ? const _AvatarPlaceholder()
+                : Image.network(
+                    avatarUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _AvatarPlaceholder(),
+                  ),
           ),
           Expanded(
             child: Column(
@@ -48,6 +63,14 @@ class ProfileHero extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AvatarPlaceholder extends StatelessWidget {
+  const _AvatarPlaceholder();
+
+  @override
+  Widget build(BuildContext context) =>
+      const Icon(Icons.person_outline, size: 20, color: AppColors.colorBrand);
 }
 
 /// Uppercase group title: "MY HEALTH", "ACCOUNT".

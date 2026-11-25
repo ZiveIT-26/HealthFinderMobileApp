@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/auth_controller.dart';
 import '../../features/ai_chat/screens/ai_chat_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/clinics/presentation/screens/clinic_details_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/medical_card/presentation/screens/medical_card_screen.dart';
@@ -16,7 +18,19 @@ final _rootKey = GlobalKey<NavigatorState>();
 final appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: AppRoutes.home,
+  // Re-run redirect whenever the user signs in or out.
+  refreshListenable: authController,
+  redirect: (context, state) {
+    final onLogin = state.matchedLocation == AppRoutes.login;
+    if (!authController.isSignedIn) return onLogin ? null : AppRoutes.login;
+    if (onLogin) return AppRoutes.home;
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: AppRoutes.login,
+      builder: (context, state) => const LoginScreen(),
+    ),
     // Three tabs with bottom navigation. Each tab keeps its own state.
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
