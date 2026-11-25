@@ -6,7 +6,7 @@ Secrets of the mobile app. Code lives in
 - iOS: Keychain, accessible after the first unlock, this device only (no iCloud sync).
 - Android: values encrypted with a Keystore-protected key.
 
-Only small secrets go here. Everything else: see `preferences.md` and the local database.
+Only small secrets go here. Everything else: see `preferences.md` and `local-database.md`.
 
 ## Keys
 
@@ -21,13 +21,16 @@ Google ID token is only sent to the backend once to get `accessToken`.
 
 ## Startup
 
-`AppStorage.init()` in `main.dart` creates `AppPreferences` and `SecureStore`
-and handles a fresh install:
+`AppStorage.init()` in `main.dart` creates `AppPreferences`, `SecureStore`
+and the local database (opened on the first query), and handles a fresh
+install:
 
 ```dart
 final storage = await AppStorage.init();
-runApp(App(preferences: storage.preferences));
+final repositories = Repositories(storage);
 ```
+
+Startup with the repositories: see `local-database.md` → "Setup".
 
 On iOS the Keychain survives uninstalling the app, while shared_preferences
 does not. If `firstLaunchDone` is `false`, everything in secure storage is

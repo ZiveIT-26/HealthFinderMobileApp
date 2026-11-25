@@ -1,210 +1,213 @@
-# Local database (encrypted)
+# Local database (drift, encrypted)
 
-Status: **planned, not implemented yet.** This file collects the decisions
-made so far. Entities and fields: `database-schema.md`.
-Related docs: `preferences.md`, `secure-storage.md`.
+Structured data of the mobile app: profile cache, personal info, medical card,
+user settings, consents and the AI chat cache. One SQLite database encrypted
+with SQLite3MultipleCiphers, accessed through `drift`.
 
-## Why a database
+- Tables and fields: [database-schema.md](database-schema.md)
+- Decisions, open questions, plans: [local-database--notes.md](local-database--notes.md)
+- Related: [preferences.md](preferences.md), [secure-storage.md](secure-storage.md)
 
-The app keeps structured, related data that has to be filtered and joined
-(mood for a week, today's medications, clinics found in a chat) and must work
-offline. Preferences and secure storage are for small key-value data only.
+Contents:
+
+- [What is stored](#what-is-stored)
+- [Code](#code)
+- [Setup](#setup)
+- [Using the repositories](#using-the-repositories)
+- [Accounts](#accounts)
+- [Changing a table](#changing-a-table)
+- [Rules](#rules)
+- [Errors and recovery](#errors-and-recovery)
 
 ## What is stored
 
 | Data | Source of truth | Local role | On sign-out |
 |---|---|---|---|
-| Profile | Backend | Cached copy, read by the profile screen | Cleared |
+| Profile | Backend | Cached copy, read by the profile screen | Deleted |
 | Personal info | **Phone** | Only copy, per account | Kept |
-| Medical card | **Phone** | Only copy, per account | Kept |
+| Medical card and its lists | **Phone** | Only copy, per account | Kept |
 | User settings, consents | **Phone** | Only copy, per account | Kept |
-| Chats, messages | Backend | Full copy for offline reading | Cleared |
-| Clinics found in chats | Backend (message payload) | Full copy for offline reading | Cleared |
-| Medications, intakes, mood | **Phone** | Only copy. Designed later | Kept |
+| Chats, messages | Backend | Full copy for offline reading | Deleted |
+| Clinics found in chats | Backend (message payload) | Full copy for offline reading | Deleted |
 
 Not stored here: tokens and the database key (secure storage), device
 settings such as language, theme and app lock (preferences), images (file
 cache).
 
-## Engine and encryption
+## Code
 
-- `drift` on top of SQLite: typed queries, generated models, migrations.
-- Encryption with SQLite3MultipleCiphers. Since drift 2.32.0 and sqlite3 3.x
-  this works without `sqlcipher_flutter_libs`. The key is set in the `setup`
-  callback of `NativeDatabase`, before drift uses the database.
-- The key comes from `SecureStore.databaseKey()`: 256 random bits, generated
-  on first use. Never derived from a user password and never hard-coded.
-- Encryption is set up from the start. Converting an existing unencrypted
-  database later is awkward.
-- `PRAGMA foreign_keys = ON` on every connection (drift `beforeOpen`).
-  SQLite has foreign keys off by default; without it cascades do not run.
-- Enums are stored as text (their name), not as an index, so reordering an
-  enum in Dart cannot corrupt data.
-- `PRAGMA secure_delete = ON`: deleted rows are overwritten instead of staying
-  in free pages of the file until the next `VACUUM`.
-
-### One database for everything
-
-Everything goes into a single encrypted database, including data that is not
-sensitive on its own (clinics). The link "this chat found an oncology clinic"
-already says something about the user's health. One database also means one
-key, one migration path, joins across all tables, and one file for a future
-backup. The cost of encryption is negligible.
-
-## Data model conventions
-
-See `database-schema.md` → "Conventions".
-
-## Draft: medications and mood
-
-Designed later, when the features are implemented. Not in `database-schema.md`
-yet.
-
-| Table | Main fields |
+| Part | Where |
 |---|---|
-| `medications` | id, name, dosage, amount, schedule, startDate, endDate, updatedAt, deletedAt |
-| `medication_intakes` | id, medicationId, scheduledAt, status (taken / skipped), markedAt, updatedAt |
-| `mood_entries` | id, mood, note, createdAt, updatedAt, deletedAt |
+| Tables | `lib/core/database/tables.dart` |
+| Database class, migrations | `lib/core/database/app_database.dart` (+ generated `app_database.g.dart`) |
+| Opening, encryption | `lib/core/database/connection.dart` |
+| iOS backup exclusion | `lib/core/database/backup_exclusion.dart`, `ios/Runner/AppDelegate.swift` |
+| Entities | `lib/features/*/data/models/` |
+| Repositories | `lib/features/*/data/*_repository.dart`, `lib/core/storage/consent_repository.dart` |
+| Signed-in user, sign-in / sign-out / "Delete my data" | `lib/core/session/` (`CurrentUser`, `AccountService`) |
+| Access from widgets | `lib/core/data/repositories.dart` (`Repositories`, `RepositoriesScope`) |
 
-Notes:
+## Setup
 
-- Per-medication reminder times live in `medications`, not in preferences.
-- Like the medical card, these tables will be kept per account (`ownerUserId`).
+Already wired in. `main.dart` creates the storages and the repositories,
+restores the session and passes them to `App`:
 
-## Medical card: user-entered data
+```dart
+final storage = await AppStorage.init();      // preferences, secure store, database
+final repositories = Repositories(storage);
+await repositories.account.restore();         // who is signed in
+runApp(App(preferences: storage.preferences, repositories: repositories));
+```
 
-Users may enter their own diagnoses, not only blood type and allergies. This
-is a personal health record, not an official medical record.
+`AppStorage` creates the database, but nothing is opened until the first
+query. Opening (`connection.dart`):
 
-- All entries come from the user, so there is no `source` field. Label them
-  as self-reported in the UI, e.g. "My records".
+1. Reads the key with `SecureStore.databaseKey()`: 32 random bytes as 64 hex
+   characters, generated on first use.
+2. Uses the file `Application Support/database/health_finder.sqlite`. The
+   folder is excluded from iCloud backups.
+3. If the file exists but the key cannot open it, deletes the file (see
+   [Errors and recovery](#errors-and-recovery)).
+4. Opens the database in a background isolate and, before drift uses it, sets
+   the key (`PRAGMA key = 'raw:…'`, no key derivation), checks it with a
+   query, and enables `foreign_keys` and `secure_delete`.
 
-## AI chat and the medical card
+Encryption comes from the `hooks` section of `pubspec.yaml`, which bundles
+SQLite3MultipleCiphers instead of plain SQLite. A debug assert fails if it is
+missing. `sqlcipher_flutter_libs` is not needed.
 
-- The medical card and medications may be sent to the chat as context only
-  with the `aiContext` consent (table `consents`).
-- Send only the fields a request needs, not the whole card.
-- The chat uses the card as context (e.g. allergies and current medications
-  when answering). It does not assess risk, diagnose or give a "risk level":
-  that would make the app a medical device under EU MDR.
-- For worrying symptoms the chat always advises seeing a doctor or calling 112.
-- The backend must not log request bodies, otherwise the card ends up on the
-  server through logs. Check the LLM provider's data retention settings.
-- Chat history itself is stored on the backend and contains health data, so
-  the `aiChat` consent is required and the backend team must protect it.
-- The backend's `user_memories` lets the LLM save allergies, conditions and
-  medications mentioned in the chat. That is health data on the server, outside
-  the medical card, and the user cannot see or delete it. To discuss with the
-  backend team.
+### Development account
 
-Not legal advice: have the consent texts reviewed before a real launch.
+Until Google sign-in exists, debug builds sign in a local test account on
+startup and fill its medical card once with sample data
+(`lib/core/session/dev_account.dart`). Remove it together with its call in
+`main.dart` once sign-in is implemented.
 
-## Several accounts on one device
+## Using the repositories
 
-Phone-owned data is kept per account (`ownerUserId` = backend `user.id`), so a
-second user signing in on the same phone does not see or delete the first
-user's data. Only the signed-in user's data is shown; nothing when signed out.
+Get them from the context. `of` does not rebuild the widget; data changes
+arrive through the `watch` streams.
 
-- One database key for all accounts: the separation is in the queries, not in
-  the encryption. Separate databases and keys per account were considered and
-  are not needed for now.
-- The owner filter lives in the repositories: every query on phone-owned
-  tables filters by the signed-in user, and screens never see `ownerUserId`.
-- Settings that belong to the user (reminders, server notifications) and
-  consents are in the database too (`user_settings`, `consents`), not in
-  preferences. Preferences keep only device settings that are needed before
-  sign-in or before the database can be opened (language, theme, onboarding,
-  app lock, first launch, terms accepted before sign-in).
-- A second account on the device starts with default settings and without
-  consents.
+```dart
+final repositories = RepositoriesScope.of(context);
+```
 
-## Reading, refreshing, offline
+| Repository | Read | Write |
+|---|---|---|
+| `profile` | `get()`, `watch()` | Only through `AccountService` |
+| `personalInfo` | `get()`, `watch()` | `save(PersonalInfo)` |
+| `medicalCard` | `get()`, `watch()`: the card with all lists (`MedicalCardData`) | `saveCard(MedicalCard)`; per list `saveAllergy(item)`, `deleteAllergy(id)`, same for conditions, implants, surgeries, contacts |
+| `userSettings` | `get()`, `watch()` | `save(UserSettings)` |
+| `consents` | `isValid(type)`, `watchValid(type)`, `latest(type)` | `grant(type)`, `revoke(type)` |
+| `chatCache` | `watchChats()`, `watchMessages(chatId)`, `clinic(id)` | `saveChatList`, `replaceHistory`, `startChat`, `appendMessage`, `setTitle` |
+| `account` | | `signIn`, `signOut`, `deleteMyData` |
 
-- Screens always read from the database (drift queries can be watched as
-  streams, so screens update when a table changes).
-- Server-backed data: show the local copy, refresh from the API in the
-  background, write the result to the database (stale-while-revalidate).
-  The profile is the exception: there is no `GET /me`, it is refreshed only on
-  sign-in.
-- Offline:
-  - all local data and cached chats / clinics are readable;
-  - sending a chat message is blocked, the reply is generated on the server;
-  - a network error never signs the user out, only a 401 that a token refresh
-    cannot fix.
-- First launch with no data and no connection: error state with "Try again".
+Per-account repositories throw `NotSignedInException` when nobody is signed
+in. Check `repositories.currentUser.isSignedIn` first.
 
-## Files
+### Reading in a screen
 
-- Avatars: `cached_network_image` in the cache folder. The system may clear
-  it, then a placeholder is shown. The API returns no clinic photos.
-- User attachments (photos of documents, test results), if added: sensitive,
-  database encryption does not cover files, so they need separate encryption.
-- The database file itself lives in the app data folder, not the cache folder.
+Create the stream once, not in `build`, or every rebuild subscribes again:
 
-## Platform notes
+```dart
+class _MedicalCardScreenState extends State<MedicalCardScreen> {
+  Stream<MedicalCardData>? _card;
 
-| Platform | Note |
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _card ??= RepositoriesScope.of(context).medicalCard.watch();
+  }
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<MedicalCardData>(
+        stream: _card,
+        builder: (context, snapshot) => /* snapshot.data */,
+      );
+}
+```
+
+### Writing
+
+There are no setters per field. Change an entity with `copyWith` and save it
+whole. `copyWith(note: null)` clears a nullable field, `copyWith()` keeps it.
+
+| Screen | When to save |
 |---|---|
-| iOS | App files are in iCloud device backups by default. Exclude the database file from backup when creating it, otherwise a restored phone gets the file but not the key (`this_device`) |
-| iOS | The key is readable after the first unlock since boot, so reminders can open the database while the phone is locked |
-| Android | Backup and device transfer are already disabled for the whole app |
+| Form (medical card, personal info) | On "Save". The draft lives in the form state; fields are validated together and saved in one write |
+| One list item (an allergy, a contact) | On "Save" of its dialog |
+| Switches in settings | Immediately, there is no "Save" button for switches |
 
-## Key problems
+```dart
+// Form "Save"
+await repositories.medicalCard.saveCard(
+  card.copyWith(bloodType: BloodType.aPositive, gpName: null),
+);
+
+// New list item: no id. Returns the new id.
+await repositories.medicalCard.saveAllergy(
+  const Allergy(name: 'Penicillin', kind: AllergyKind.allergy,
+      category: AllergyCategory.medication),
+);
+
+// Switch
+await repositories.userSettings.save(
+  settings.copyWith(moodRemindersEnabled: value),
+);
+```
+
+Saving a contact with `isPrimary: true` removes the flag from the previous
+primary contact. Deleting a list item sets `deletedAt`; the item disappears
+from `watch`.
+
+## Accounts
+
+`CurrentUser` holds the backend `user.id` of the signed-in user.
+Repositories filter phone-owned data by it (`ownerUserId`), so screens never
+deal with user ids. Only `AccountService` changes it:
+
+| Method | Does |
+|---|---|
+| `restore()` | At startup: a cached profile means the user is still signed in |
+| `signIn(profile)` | After the backend returned the account. Saves the profile, creates default settings for a new account, records terms accepted on the device. Another account's profile and chat cache are replaced |
+| `signOut()` | Deletes the profile (the chat cache goes with it) and the tokens. Medical card, settings and consents stay for the next sign-in |
+| `deleteMyData()` | Deletes the signed-in user's personal info, medical card, settings and consents for good, then signs out. Other accounts are untouched. Server data is not deleted |
+
+## Changing a table
+
+1. Edit `lib/core/database/tables.dart`.
+2. Regenerate: `dart run build_runner build --delete-conflicting-outputs`
+   (or keep `dart run build_runner watch --delete-conflicting-outputs`
+   running). `flutter run` does not do it.
+3. Update the entity, the repository mapping and `database-schema.md`.
+4. Commit the generated `app_database.g.dart` with the change.
+
+An existing database on a device is not migrated: `onCreate` runs only for a
+new file. Before the first release, reinstall the app after a change. From
+the first release, every change needs a migration step and a higher
+`schemaVersion`.
+
+## Rules
+
+- Screens read from the database, never directly from the API. Network code
+  writes into the repositories.
+- Phone-owned tables are always filtered by the signed-in user inside the
+  repository.
+- Enums are stored by name (`textEnum`), dates as ISO-8601 text
+  (`build.yaml`). Do not reorder or rename enum values without a migration.
+- Row classes end in `Row` (`MedicalCardRow`); screens get entities, not rows.
+- Do not log or print entities: they contain health data.
+
+## Errors and recovery
 
 | Situation | Handling |
 |---|---|
-| `databaseKey()` throws | Temporary (e.g. iOS before the first unlock). Retry later. Never recreate the database because of this |
-| File exists, key does not | The file cannot be opened (e.g. restored from a backup). Delete the file and start with an empty database |
-| "Delete my data" | Per account. Hard delete (not `deletedAt`) of the signed-in user's `personal_info` and `medical_card` (lists cascade), `user_settings` and `consents` of the user, then sign-out (profile and chat cache cascade). Other accounts on the device are untouched. Server data (chats, memories) needs account deletion on the backend |
+| `databaseKey()` throws | Temporary (iOS before the first unlock after a reboot). The database is never recreated because of it. At startup the app continues as signed out |
+| The file exists, the key cannot open it | The file can never be read again (restored from a backup, or the key was lost). It is deleted, and the app starts with an empty database |
+| "Delete my data" | `AccountService.deleteMyData()`, see [Accounts](#accounts) |
 
-## Backup and sync (later)
-
-Not part of the first version. If added:
-
-- Backup, not sync: periodically upload the whole encrypted database file;
-  on a new device download it whole. No merging, no conflicts.
-- The server must not be able to decrypt it. Key options:
-  - platform key sync (iCloud Keychain on iOS, Block Store on Android) as the
-    main way;
-  - a recovery code known only to the user as a fallback (e.g. iPhone →
-    Android). Forgotten code = data cannot be restored.
-  - A key held by the server is ruled out: the server would then store
-    readable health data.
-- Requires a separate consent.
-- Simpler first step: export / import of an encrypted file by the user.
-
-## Postponed
-
-Discussed, not part of the schema for now. Each can be added later with a
-migration.
-
-- Vaccinations (name, date, note). No feature reads them yet: regional
-  infection alerts (Epic 7) are not personal.
-- Smoking and alcohol habits. Prevention tips (Epic 2) are generic, alcohol
-  warnings (Epic 3) depend on the medication, not on the user.
-- Diary of recent illnesses. Not in the epics; recent complaints are already in
-  the chat history.
-
-## Open questions
-
-- Keep all chats locally, or only the last N?
-- Height and weight: one current value, or history?
-
-To ask the backend team:
-
-- `updatedAt` in `GET /chat/sessions`.
-- `GET /me`, account deletion, and viewing / deleting `user_memories`.
-- Refresh token: the backend issues none, but `SecureStore` has a slot for it.
-
-## Next steps
-
-1. Add `drift` with encryption, open the database with
-   `SecureStore.databaseKey()`, enable foreign keys, exclude the file from iOS
-   backup.
-2. Tables for the phone-owned data: personal info, medical card and its lists,
-   user settings, consents.
-3. Repositories on top of the tables, with the owner filter, replacing the
-   mock data.
-4. Google sign-in and the `Authorization` header, then the server-backed
-   tables: profile, chats, messages, clinics.
-5. Medications and mood, when those features are implemented.
+| Platform | Note |
+|---|---|
+| iOS | App files are in iCloud device backups by default. The database folder is excluded, otherwise a restored phone gets the file but not the key (`this_device`) |
+| iOS | The key is readable after the first unlock since boot, so background work can open the database while the phone is locked |
+| Android | Backup and device transfer are disabled for the whole app |

@@ -1,14 +1,15 @@
 # Local database schema
 
 Working file: entities, relations and fields of the local database.
-Filled in step by step. Decisions and reasoning live in `local-database.md`.
+Filled in step by step. How to use the database: `local-database.md`;
+decisions and reasoning: `local-database--notes.md`.
 
 Status per entity: **in review**, **agreed**.
 
 ## Entities and relations
 
 Medications, medication intakes, mood and the weather cache are not here yet.
-Medications and mood stay as a draft in `local-database.md`; all of them will
+Medications and mood stay as a draft in `local-database--notes.md`; all of them will
 be designed when they are implemented.
 
 ```mermaid
@@ -108,8 +109,7 @@ districts of the Košice region with known coordinates: no geocoding, no exact
 home address. The backend accepts only coordinates, so they are stored with
 the label.
 
-Open questions:
-- Height and weight: one current value, or history?
+Height and weight hold one current value each, no history.
 
 ## medical_card
 
@@ -122,7 +122,7 @@ consent (table `consents`).
 It never assesses or scores them (EU MDR).
 
 Current medications are not stored here: the card will show them from
-`medications` (designed later, see `local-database.md`).
+`medications` (designed later, see `local-database--notes.md`).
 
 | Field | Type | Null | Notes |
 |---|---|---|---|
@@ -188,7 +188,7 @@ Implants and medical devices: pacemaker, insulin pump, prostheses.
 | `phone` | text | no | |
 | `isPrimary` | bool | no | At most one primary per card: unique index on `medicalCardId` where `isPrimary` and not deleted |
 
-Postponed items are listed in `local-database.md` → "Postponed".
+Postponed items are listed in `local-database--notes.md` → "Postponed".
 
 ## user_settings
 

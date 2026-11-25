@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text instead of Unix timestamps: readable when debugging,
+          # and the time zone offset is kept.
+          store_date_time_values_as_text: true
