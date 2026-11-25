@@ -36,10 +36,17 @@ abstract final class AppColors {
   // Not from Figma, but used in the app for chat links and track lines.
 
   static const chatLink = Color(0xFF00509C);
-  static const track = Color(0xFFE7E7E7);
+  static const track = Color(0xFFE7E7E7); 
 
   static const fadeStart = Color(0x00D1A7E7);
   static const fadeEnd = Color(0xFFD0A3EA);
+
+  static const chipGradientStart = Color(0xFFF7BEF7); // pink
+  static const chipGradientEnd = Color(0xFFD3BAF9);   // lavender
+
+  static const welcomeCardTop = Color(0xFFD29EFF);
+  static const welcomeCardMiddle = Color(0xFFE6B2EE);
+  static const welcomeCardBottom = Color(0xFFE996C9);
 
   // Placeholders
 

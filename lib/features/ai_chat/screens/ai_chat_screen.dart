@@ -1,3 +1,4 @@
+import 'package:health_finder/features/ai_chat/widgets/chat_suggestions.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:health_finder/core/auth/auth_controller.dart';
@@ -10,7 +11,6 @@ import '../widgets/chat_composer.dart';
 import '../widgets/chat_header.dart';
 import '../widgets/chat_messages.dart';
 import '../widgets/chat_welcome.dart';
-import '../widgets/measure_size.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -103,8 +103,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
             ListenableBuilder(
               listenable: _chat,
               builder: (context, _) => ChatHeader(
-                // Only allow when there's something to clear and nothing is streaming.
                 onNewChat: _chat.messages.isEmpty || _chat.loading ? null : _newChat,
+                onHistory: () {}, // TODO: open chats history
               ),
             ),
             Expanded(
@@ -113,69 +113,46 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 builder: (context, _) {
                   final isEmpty = _chat.messages.isEmpty;
 
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          ignoring: isEmpty,
-                          child: AnimatedOpacity(
-                            duration: _moveDuration,
-                            curve: Curves.easeIn,
-                            opacity: isEmpty ? 0 : 1,
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: isEmpty
+                        ? _buildWelcome()
+                        : KeyedSubtree(
+                            key: const ValueKey('messages'),
                             child: _buildMessageList(),
                           ),
-                        ),
-                      ),
-                      // One block: greeting, composer, suggestions.
-                      AnimatedAlign(
-                        duration: _moveDuration,
-                        curve: _moveCurve,
-                        alignment: isEmpty
-                            ? const Alignment(0, -0.15)
-                            : Alignment.bottomCenter,
-                        child: MeasureSize(
-                          onChange: (size) {
-                            if (size.height == _bottomBlockHeight) return;
-                            setState(() => _bottomBlockHeight = size.height);
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _Collapsible(
-                                visible: isEmpty,
-                                duration: _moveDuration,
-                                curve: _moveCurve,
-                                child: const ChatGreeting(),
-                              ),
-                              // Rebuilds when recording starts or stops.
-                              ListenableBuilder(
-                                listenable: _voice,
-                                builder: (context, _) => ChatComposer(
-                                  controller: _text,
-                                  enabled: !_chat.loading,
-                                  onSend: _send,
-                                  onVoiceTap: _onVoiceTap,
-                                  isListening: _voice.isListening,
-                                ),
-                              ),
-                              _Collapsible(
-                                visible: isEmpty,
-                                duration: _moveDuration,
-                                curve: _moveCurve,
-                                child: ChatSuggestions(onSelected: _send),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   );
                 },
               ),
             ),
+            // Pinned to the bottom. Rebuilds on chat state and on voice state.
+            ListenableBuilder(
+              listenable: Listenable.merge([_chat, _voice]),
+              builder: (context, _) => ChatComposer(
+                controller: _text,
+                enabled: !_chat.loading,
+                onSend: _send,
+                onVoiceTap: _onVoiceTap,
+                isListening: _voice.isListening,
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Greeting card + "Try asking" chips. Scrolls if the keyboard shrinks the space.
+  Widget _buildWelcome() {
+    return SingleChildScrollView(
+      key: const ValueKey('welcome'),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ChatGreeting(),
+          ChatSuggestions(onSelected: _send),
+        ],
       ),
     );
   }
@@ -185,8 +162,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
     return ListView.separated(
       controller: _scroll,
-      // Bottom padding = the composer block, so the last message isn't covered.
-      padding: EdgeInsets.fromLTRB(17, 28, 17, _bottomBlockHeight + AppSpacing.l),
+      padding: const EdgeInsets.fromLTRB(17, 28, 17, AppSpacing.l),
       itemCount: messages.length,
       separatorBuilder: (_, _) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
@@ -201,32 +177,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 isStreaming: _chat.loading && isLast,
               );
       },
-    );
-  }
-}
-
-/// Fades and collapses its child to zero height when not visible.
-class _Collapsible extends StatelessWidget {
-  const _Collapsible({
-    required this.visible,
-    required this.child,
-    required this.duration,
-    required this.curve,
-  });
-
-  final bool visible;
-  final Widget child;
-  final Duration duration;
-  final Curve curve;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedCrossFade(
-      duration: duration,
-      sizeCurve: curve,
-      crossFadeState: visible ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      firstChild: child,
-      secondChild: const SizedBox(width: double.infinity),
     );
   }
 }

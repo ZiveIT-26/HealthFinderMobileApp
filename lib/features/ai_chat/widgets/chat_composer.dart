@@ -9,7 +9,7 @@ class ChatComposer extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.enabled = true,
-    this.hintText = 'Message HealthFinder...',
+    this.hintText = 'Type your health question...',
     this.listeningHintText = 'Listening...',
     this.minLines = 1,
     this.maxLines = 5,
@@ -25,13 +25,7 @@ class ChatComposer extends StatefulWidget {
   });
 
   final ValueChanged<String> onSend;
-
-  /// Optional external controller. Pass one when the parent needs to read or
-  /// change the text (for example, to insert speech recognition results).
-  /// If omitted, the composer creates and disposes its own.
-  /// Don't swap it for another one after the first build.
   final TextEditingController? controller;
-
   final FocusNode? focusNode;
 
   /// Set to false while waiting for a response, for example.
@@ -44,13 +38,9 @@ class ChatComposer extends StatefulWidget {
 
   final int minLines;
   final int maxLines;
-
   final Widget? leading;
-
   final VoidCallback? onVoiceTap;
-
   final bool isListening;
-
   final EdgeInsetsGeometry padding;
 
   @override
@@ -58,8 +48,8 @@ class ChatComposer extends StatefulWidget {
 }
 
 class _ChatComposerState extends State<ChatComposer> {
-  static const _rowHeight = 46.0;
-  static const _fieldRadius = 17.0;
+  static const _rowHeight = 52.0;
+  static const _fieldRadius = 14.0;
 
   late final bool _ownsController = widget.controller == null;
   late final bool _ownsFocusNode = widget.focusNode == null;
@@ -83,30 +73,6 @@ class _ChatComposerState extends State<ChatComposer> {
     _focusNode.requestFocus(); // keep the keyboard open
   }
 
-  /// Voice button, stop button or send button, depending on the state.
-  Widget _buildAction(TextEditingValue value) {
-    final hasText = value.text.trim().isNotEmpty;
-    final hasVoice = widget.onVoiceTap != null;
-    final showVoice = hasVoice && (widget.isListening || !hasText);
-
-    if (showVoice) {
-      return _ActionButton(
-        key: const ValueKey('voice'),
-        icon: widget.isListening ? Icons.stop_rounded : Icons.mic_none_rounded,
-        tooltip: widget.isListening ? 'Stop recording' : 'Voice input',
-        filled: !widget.isListening,
-        onTap: widget.enabled ? widget.onVoiceTap : null,
-      );
-    }
-
-    return _ActionButton(
-      key: const ValueKey('send'),
-      icon: Icons.arrow_forward,
-      tooltip: 'Send',
-      onTap: widget.enabled && hasText ? _submit : null,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -117,28 +83,30 @@ class _ChatComposerState extends State<ChatComposer> {
           final focused = _focusNode.hasFocus;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.fromLTRB(AppSpacing.m, 0, AppSpacing.xxs, 0),
-            // Base 1px border, always there. Takes no extra space when focused.
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(_fieldRadius),
-              border: Border.all(color: AppColors.chatBorder),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.m,
+              0,
+              AppSpacing.xs,
+              0,
             ),
-            // Focus ring painted on top, so changing its width never shifts the layout.
+            decoration: BoxDecoration(
+              color: AppColors.purpleSoft,
+              borderRadius: BorderRadius.circular(_fieldRadius),
+            ),
+            // Focus ring painted on top, so it never shifts the layout.
             foregroundDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(_fieldRadius),
               border: Border.all(
                 width: 2,
                 color: focused
-                    ? AppColors.colorBrand
-                    : AppColors.colorBrand.withValues(alpha: 0),
+                    ? AppColors.actionPurple
+                    : AppColors.actionPurple.withValues(alpha: 0),
               ),
             ),
             child: child,
           );
         },
         child: Row(
-          // Centers the action button against the whole field, including multi-line text
           crossAxisAlignment: CrossAxisAlignment.center,
           spacing: AppSpacing.s,
           children: [
@@ -155,13 +123,16 @@ class _ChatComposerState extends State<ChatComposer> {
                   keyboardType: TextInputType.multiline,
                   textCapitalization: TextCapitalization.sentences,
                   textAlignVertical: TextAlignVertical.center,
-                  style: AppTextStyles.body,
+                  cursorColor: AppColors.actionPurple,
+                  style: AppTextStyles.body.copyWith(color: AppColors.ink),
                   decoration: InputDecoration(
-                    hintText:
-                        widget.isListening ? widget.listeningHintText : widget.hintText,
-                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.chatPlaceholder),
+                    hintText: widget.isListening
+                        ? widget.listeningHintText
+                        : widget.hintText,
+                    hintStyle: AppTextStyles.body.copyWith(
+                      color: AppColors.secondaryText.withValues(alpha: 0.75),
+                    ),
                     filled: false,
-                    // Every state is set explicitly, so the theme can't add a focus border.
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -169,18 +140,36 @@ class _ChatComposerState extends State<ChatComposer> {
                     errorBorder: InputBorder.none,
                     focusedErrorBorder: InputBorder.none,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
               ),
             ),
+            // Send button (always visible, enabled only when there is text).
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
-              builder: (context, value, _) => AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                child: _buildAction(value),
-              ),
+              builder: (context, value, _) {
+                final hasText = value.text.trim().isNotEmpty;
+                return _ActionButton(
+                  icon: Icons.arrow_forward,
+                  tooltip: 'Send',
+                  style: _ActionStyle.primary,
+                  onTap: widget.enabled && hasText ? _submit : null,
+                );
+              },
             ),
+            // Voice button (white; solid purple with stop icon while recording).
+            if (widget.onVoiceTap != null)
+              _ActionButton(
+                icon: widget.isListening
+                    ? Icons.stop_rounded
+                    : Icons.mic_none_rounded,
+                tooltip: widget.isListening ? 'Stop recording' : 'Voice input',
+                style: widget.isListening
+                    ? _ActionStyle.primary
+                    : _ActionStyle.secondary,
+                onTap: widget.enabled ? widget.onVoiceTap : null,
+              ),
           ],
         ),
       ),
@@ -188,34 +177,33 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 }
 
+enum _ActionStyle { primary, secondary }
+
 /// Square icon button on the right side of the composer.
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
-    super.key,
     required this.icon,
     required this.tooltip,
     required this.onTap,
-    this.filled = true,
+    required this.style,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onTap;
-
-  /// Accent background with a light icon. When false: soft background with an
-  /// accent icon (used for the "recording" state).
-  final bool filled;
+  final _ActionStyle style;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(13);
-    final background =
-        filled ? AppColors.colorBrand : AppColors.colorBrand.withValues(alpha: 0.12);
-    final foreground = filled ? AppColors.textOnAction : AppColors.colorBrand;
+    final radius = BorderRadius.circular(10);
+    final isPrimary = style == _ActionStyle.primary;
+    final background = isPrimary ? AppColors.actionPurple : AppColors.white;
+    final foreground =
+        isPrimary ? AppColors.textOnAction : AppColors.actionPurple;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
-      opacity: onTap != null ? 1 : 0.4,
+      opacity: onTap != null ? 1 : 0.5,
       child: Tooltip(
         message: tooltip,
         child: Material(
@@ -223,9 +211,12 @@ class _ActionButton extends StatelessWidget {
           borderRadius: radius,
           child: InkWell(
             borderRadius: radius,
+            splashColor: isPrimary
+                ? AppColors.actionPurplePressed
+                : AppColors.purpleSoft,
             onTap: onTap,
             child: SizedBox.square(
-              dimension: 38,
+              dimension: 40,
               child: Icon(icon, size: 20, color: foreground),
             ),
           ),

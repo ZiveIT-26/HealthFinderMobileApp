@@ -9,21 +9,57 @@ class SuggestionChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
+  static const _radius = 14.0;
+
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(_radius);
+
     return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(17),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(17),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card, vertical: AppSpacing.m),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(color: AppColors.chatBorder),
+      type: MaterialType.transparency,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              AppColors.chipGradientStart,
+              AppColors.chipGradientEnd,
+            ],
           ),
-          child: Text(label, style: AppTextStyles.chatBody),
+        ),
+        child: InkWell(
+          borderRadius: borderRadius,
+          splashColor: AppColors.actionPurple.withValues(alpha: 0.12),
+          highlightColor: AppColors.actionPurple.withValues(alpha: 0.06),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: 10,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: AppSpacing.s,
+              children: [
+                const Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 22,
+                  color: AppColors.actionPurple,
+                ),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: AppTextStyles.chatBody.copyWith(
+                      color: AppColors.ink,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
