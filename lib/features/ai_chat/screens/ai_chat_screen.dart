@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:health_finder/core/auth/auth_controller.dart';
 import 'package:health_finder/core/network/chat_api.dart';
 import 'package:health_finder/core/network/chat_controller.dart';
 import 'package:health_finder/features/ai_chat/widgets/voice_input_contoller.dart';
@@ -42,7 +43,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   void initState() {
     super.initState();
-    _chat = ChatController(ChatApi(_backendUrl));
+    _chat = ChatController(
+      ChatApi(_backendUrl, clientFactory: authController.createClient),
+    );
     _chat.addListener(_scrollToBottom);
   }
 

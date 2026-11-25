@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../core/auth/auth_controller.dart';
 import '../../../../core/data/repositories.dart';
 import '../../../../core/formatting/dates.dart';
 import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_rows_card.dart';
 import '../../../medical_card/data/models/medical_card_data.dart';
 import '../../data/models/personal_info.dart';
@@ -45,10 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30, 25, 30, 20),
-              child: Text('Profile', style: AppTextStyles.tabTitle),
-            ),
             Expanded(
               child: StreamBuilder<Profile?>(
                 stream: _profile,
@@ -90,6 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ProfileHero(
             name: profile?.name ?? 'Not signed in',
             subtitle: subtitle,
+            avatarUrl: profile?.avatarUrl,
           ),
           InfoRowsCard(
             rows: [
@@ -111,6 +110,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SettingsGroupTitle(group.title),
             for (final item in group.items) SettingsRow(item: item),
           ],
+          AppButton.text(
+            'Sign out',
+            variant: AppButtonVariant.soft,
+            size: AppButtonSize.large,
+            expanded: true,
+            onTap: authController.signOut,
+          ),
         ])
           Padding(
             padding: const EdgeInsets.only(bottom: 10),

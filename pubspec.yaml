@@ -41,6 +41,7 @@ dependencies:
   flutter_dotenv: ^6.0.2
   speech_to_text: ^7.5.0
   shared_preferences: ^2.3.0
+  google_sign_in: ^7.2.0
   
   material_ui: ^1.11.1
   flutter_secure_storage: ^11.2.0

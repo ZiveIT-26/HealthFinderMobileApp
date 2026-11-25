@@ -55,7 +55,8 @@ restores the session and passes them to `App`:
 ```dart
 final storage = await AppStorage.init();      // preferences, secure store, database
 final repositories = Repositories(storage);
-await repositories.account.restore();         // who is signed in
+authController = AuthController(api, storage.secure, repositories, ...);
+await authController.init();                   // token + account.restore()
 runApp(App(preferences: storage.preferences, repositories: repositories));
 ```
 
@@ -78,10 +79,15 @@ missing. `sqlcipher_flutter_libs` is not needed.
 
 ### Development account
 
-Until Google sign-in exists, debug builds sign in a local test account on
-startup and fill its medical card once with sample data
-(`lib/core/session/dev_account.dart`). Remove it together with its call in
-`main.dart` once sign-in is implemented.
+Debug builds show a "Test login" button on the login screen. It signs in the
+backend test user (`POST /auth/test-login`, needs `TEST_AUTH_ENABLED=true` on
+the backend) and fills its medical card once with sample data
+(`lib/core/session/dev_account.dart`). Nothing signs in automatically on
+startup any more.
+
+Sign-in itself is in `lib/core/auth/` (`AuthController`): Google ID token ->
+`POST /auth/google` -> `SecureStore.writeAccessToken` and
+`AccountService.signIn`, so the cached profile is refreshed on every sign-in.
 
 ## Using the repositories
 

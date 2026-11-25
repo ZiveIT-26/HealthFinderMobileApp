@@ -170,12 +170,15 @@ To ask the backend team:
 ## Next steps
 
 Done: drift with encryption, tables, repositories, `CurrentUser`,
-`AccountService`, profile and medical card screens read from the database.
+`AccountService`, profile and medical card screens read from the database,
+Google sign-in with the `Authorization` header (`lib/core/auth/`), sign-out
+button in the profile.
 
 1. Check on devices: a database whose first opening failed (key not readable
    yet) opens on a later query; the iOS backup exclusion channel works.
-2. Google sign-in and the `Authorization` header; `AccountService.signIn`
-   with the backend's user; remove the development account.
+2. ~~Google sign-in and the `Authorization` header; `AccountService.signIn`
+   with the backend's user; remove the development account.~~ Done; the
+   development account is now behind the "Test login" button.
 3. `ChatApi`: `GET /chat/sessions` and `GET /chat/history/:id`, written into
    `ChatCacheRepository`; `ChatController` writes prompts, replies and titles
    into the cache.
