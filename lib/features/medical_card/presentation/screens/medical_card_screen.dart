@@ -6,7 +6,7 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/detail_heading.dart';
 import '../../../../core/widgets/info_rows_card.dart';
 import '../../../../core/widgets/page_header.dart';
-import '../../data/medical_card_mock_data.dart';
+import '../../data/models/medical_card_data.dart';
 import '../widgets/medical_card_hero.dart';
 
 const _storageNote = 'Information is stored locally on this device and is not '
@@ -42,24 +42,35 @@ class _MedicalCardScreenState extends State<MedicalCardScreen> {
           children: [
             const PageHeader(title: 'Medical Card'),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.m, AppSpacing.l, 30),
-                children: [
-                  for (final section in [
-                    const MedicalCardHero(),
-                    for (final s in MedicalCardMockData.sections) ...[
-                      DetailHeading(s.title),
-                      InfoRowsCard(rows: s.rows, tinted: true),
-                    ],
-                    // Not interactive yet: there is no edit screen.
-                    AppButton.text('Edit Medical Card', leading: Icon(Icons.edit_outlined)),
-                    Text(MedicalCardMockData.storageNote, style: AppTextStyles.caption),
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: section,
-                    ),
-                ],
+              child: StreamBuilder<MedicalCardData>(
+                stream: _card,
+                builder: (context, snapshot) => ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.l, AppSpacing.m, AppSpacing.l, 30),
+                  children: [
+                    for (final section in [
+                      const MedicalCardHero(),
+                      if (snapshot.data case final data?)
+                        for (final s in _sections(data)) ...[
+                          DetailHeading(s.title),
+                          InfoRowsCard(rows: s.rows, tinted: true),
+                        ]
+                      else if (_card == null)
+                        Text('Sign in to see your medical card.',
+                            style: AppTextStyles.caption),
+                        // Not interactive yet: there is no edit screen.
+                        AppButton.text(
+                          'Edit Medical Card',
+                          leading: Icon(Icons.edit_outlined)
+                        ),
+                      Text(_storageNote, style: AppTextStyles.caption),
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: section,
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
