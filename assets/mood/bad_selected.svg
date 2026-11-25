@@ -1,0 +1,30 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_675_745" x1="23.9045" y1="0.952637" x2="23.9045" y2="48" gradientUnits="userSpaceOnUse">
+<stop stop-color="#70B6E9"/>
+<stop offset="1" stop-color="#C8E8FB"/>
+</linearGradient>
+<clipPath id="clip0_675_745">
+<rect width="48" height="48" fill="white"/>
+</clipPath>
+<clipPath id="stroke1_675_745">
+<path d="M10 3.00001C18 1.19209e-05 32 1.19209e-05 39 5.00001C47 10 49 23 45 33C41 42 32 46 24 48C15 46 6 41 3 32C-0.999998 21 1.90735e-06 7.00001 10 3.00001Z"/>
+</clipPath>
+</defs>
+<g id="Mood">
+<g id="Mood / Gradient emotion/Organic/Bad/Selected">
+<g id="Gradient surface" clip-path="url(#clip0_675_745)">
+<g id="Vector">
+<path d="M10 3.00001C18 1.19209e-05 32 1.19209e-05 39 5.00001C47 10 49 23 45 33C41 42 32 46 24 48C15 46 6 41 3 32C-0.999998 21 1.90735e-06 7.00001 10 3.00001Z" fill="#D9D9D9"/>
+<path d="M10 3.00001C18 1.19209e-05 32 1.19209e-05 39 5.00001C47 10 49 23 45 33C41 42 32 46 24 48C15 46 6 41 3 32C-0.999998 21 1.90735e-06 7.00001 10 3.00001Z" fill="url(#paint0_linear_675_745)"/>
+<path d="M10 3.00001C18 1.19209e-05 32 1.19209e-05 39 5.00001C47 10 49 23 45 33C41 42 32 46 24 48C15 46 6 41 3 32C-0.999998 21 1.90735e-06 7.00001 10 3.00001Z" stroke-width="3.6" stroke-linejoin="round" stroke="white" stroke-opacity="0.3" clip-path="url(#stroke1_675_745)"/>
+</g>
+</g>
+<g id="Face">
+<g id="Expression vectors">
+<path id="Vector_2" d="M16 20C18 22 20 22 22 20M26 20C28 22 30 22 32 20M19 32C22.3333 29.3333 25.6667 29.3333 29 32" stroke-width="2.2" stroke-linecap="round" stroke="#19202F"/>
+</g>
+</g>
+</g>
+</g>
+</svg>

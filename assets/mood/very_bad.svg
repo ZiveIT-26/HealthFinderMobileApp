@@ -1,0 +1,21 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_675_745" x1="24.0744" y1="5.04639" x2="24.0744" y2="43.537" gradientUnits="userSpaceOnUse">
+<stop stop-color="#B7C6E9"/>
+<stop offset="1" stop-color="#E7ECFA"/>
+</linearGradient>
+</defs>
+<g id="Mood">
+<g id="Mood / Gradient emotion/Organic/Very bad/Default" opacity="0.5">
+<g id="Gradient surface">
+<path id="Vector" d="M13.9999 5.66666C18.1666 4 20.6666 7.33333 23.9999 6.5C28.1666 4 32.3333 4.83333 34.8333 8.16666C40.6666 8.16666 43.9999 13.1667 42.3333 18.1667C44.8333 23.1667 42.3333 26.5 42.3333 30.6667C43.1666 36.5 38.9999 42.3333 33.1666 42.3333C28.9999 44.8333 25.6666 42.3333 22.3333 42.3333C17.3333 44.8333 12.3333 43.1667 9.83326 39.8333C4.83326 38.1667 3.99993 33.1667 5.6666 29C3.99993 24 4.83326 21.5 5.6666 18.1667C3.99993 12.3333 8.1666 6.5 13.9999 5.66666Z" fill="url(#paint0_linear_675_745)"/>
+</g>
+<g id="Face">
+<g id="Expression vectors">
+<path id="Vector_2" d="M17.3333 18.9999L20.6666 17.3333M27.3333 17.3333L30.6666 18.9999M19 22.3333V23.9999M29 22.3333V23.9999M19 31.4999C22.3333 28.1666 25.6666 28.1666 29 31.4999" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round" stroke="#19202F"/>
+<path id="Vector_3" d="M31.5 25.6666C29.2778 28.4444 29.2778 30.1111 31.5 30.6666C33.7222 30.1111 33.7222 28.4444 31.5 25.6666Z" fill="#19202F"/>
+</g>
+</g>
+</g>
+</g>
+</svg>

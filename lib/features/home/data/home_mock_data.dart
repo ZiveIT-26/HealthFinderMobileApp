@@ -42,8 +42,8 @@ enum Mood {
   final String label;
   final String _file;
 
-  String get asset => 'assets/mood/$_file.png';
-  String get selectedAsset => 'assets/mood/${_file}_selected.png';
+  String get asset => 'assets/mood/$_file.svg';
+  String get selectedAsset => 'assets/mood/${_file}_selected.svg';
 }
 
 /// The tone decides the metric value color.

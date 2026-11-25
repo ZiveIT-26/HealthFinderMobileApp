@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:health_finder/core/theme/app_colors.dart';
-import 'package:health_finder/core/theme/app_spacing.dart';
-import 'package:health_finder/core/theme/app_text_styles.dart';
+
+import '../../../core/theme/theme.dart';
 
 class SuggestionChip extends StatelessWidget {
   const SuggestionChip({super.key, required this.label, required this.onTap});
@@ -9,11 +8,9 @@ class SuggestionChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  static const _radius = 14.0;
-
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(_radius);
+    final borderRadius = BorderRadius.circular(AppRadius.field);
 
     return Material(
       type: MaterialType.transparency,
@@ -35,26 +32,24 @@ class SuggestionChip extends StatelessWidget {
           highlightColor: AppColors.actionPurple.withValues(alpha: 0.06),
           onTap: onTap,
           child: Padding(
+            // Figma: Chat / Suggestion chip, 12 / 8 padding, 20 px icon.
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,
-              vertical: 10,
+              vertical: AppSpacing.s,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              spacing: AppSpacing.s,
+              spacing: AppSpacing.xs,
               children: [
                 const Icon(
                   Icons.auto_awesome_outlined,
-                  size: 22,
+                  size: 20,
                   color: AppColors.actionPurple,
                 ),
                 Flexible(
                   child: Text(
                     label,
-                    style: AppTextStyles.chatBody.copyWith(
-                      color: AppColors.ink,
-                      height: 1.2,
-                    ),
+                    style: AppTextStyles.body.copyWith(color: AppColors.ink),
                   ),
                 ),
               ],

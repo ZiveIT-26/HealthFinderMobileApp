@@ -1,0 +1,23 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_675_745" x1="23.873" y1="4.67419" x2="23.873" y2="43.3924" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F0F2F5"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<clipPath id="clip0_675_745">
+<rect width="40" height="40" fill="white" transform="translate(4 4)"/>
+</clipPath>
+</defs>
+<g id="Mood">
+<g id="Mood / Gradient emotion/Organic/Okay/Default" opacity="0.5">
+<g id="Gradient surface" clip-path="url(#clip0_675_745)">
+<path id="Vector" d="M12.3335 6.50004C21.5002 3.1667 34.0002 4.00004 39.8335 12.3334C44.0002 18.1667 44.8335 30.6667 39.8335 37.3334C34.0002 44.8334 14.8335 45.6667 8.16682 38.1667C2.33349 31.5 3.16682 13.1667 12.3335 6.50004Z" fill="url(#paint0_linear_675_745)"/>
+</g>
+<g id="Face">
+<g id="Expression vectors">
+<path id="Vector_2" d="M19 20.6666V23.1666M29 20.6666V23.1666M20.6667 29.8333H27.3333" stroke-width="2" stroke-linecap="round" stroke="#19202F"/>
+</g>
+</g>
+</g>
+</g>
+</svg>

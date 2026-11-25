@@ -1,128 +1,131 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/gradient_surface.dart';
+import 'home_scaled.dart';
 
-/// Hero card shown at the top while the conversation is empty.
-/// The mascot head overlaps the card's top-left corner and the tail
-/// overlaps its bottom-right corner.
+/// Hero card shown at the top while the conversation is empty
+/// (Figma: Chat / Welcome hero). The mascot head overlaps the card's
+/// top-left corner and the tail its bottom-right corner.
+///
+/// Scaled like the Home screen, see [HomeScaled].
 class ChatGreeting extends StatelessWidget {
   const ChatGreeting({super.key});
 
-  static const _cardRadius = 28.0;
-  static const _headWidth = 190.0;
-  static const _tailWidth = 135.0;
+  // The mascot and the space above the card are 0.8 of Figma, to keep the
+  // card compact; the text keeps its Figma size for readability.
 
-  /// How far the head sticks out above the card.
-  static const _headOverhang = 80.0;
+  /// Where the card starts below the top of the hero; the head fills it.
+  static const _cardTop = 75.0;
 
-  /// How far the tail sticks out below the card.
-  static const _tailOverhang = 30.0;
+  /// The head sticks out above the hero.
+  static const _headOverhang = 12.0;
+  static const _headWidth = 150.0;
+  static const _tailWidth = 105.0;
+
+  /// The tail sticks out below the card.
+  static const _tailOverhang = 34.0;
+
+  static const _cardRadius = BorderRadius.only(
+    topLeft: Radius.circular(50),
+    topRight: Radius.circular(AppRadius.card),
+    bottomRight: Radius.circular(50),
+    bottomLeft: Radius.circular(AppRadius.card),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Padding(
+      // No bottom padding: "Try asking" below adds its own, and the tail
+      // overlaps it as in Figma.
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.l,
+        _headOverhang,
+        AppSpacing.l,
         0,
-        AppSpacing.l,
-        AppSpacing.l,
       ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Card
-          Padding(
-            padding: const EdgeInsets.only(
-              top: _headOverhang,
-              bottom: _tailOverhang,
-            ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.l,
-                AppSpacing.l,
-                AppSpacing.l,
-                AppSpacing.l,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(_cardRadius),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.welcomeCardTop,
-                    AppColors.welcomeCardMiddle,
-                    AppColors.welcomeCardBottom,
-                  ],
-                  stops: [0, 0.45, 1],
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: AppSpacing.m,
-                children: [
-                  // Title is on the right, next to the mascot head.
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.m),
-                    child: Text(
-                      'Hi! I’m your\nHealth Assistant',
-                      textAlign: TextAlign.right,
-                      style: AppTextStyles.body.copyWith(
-                        fontSize: 24,
-                        height: 1.25,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Ask about symptoms, find a doctor near you or check '
-                    'what to do next. I’ll keep answers short and clear.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.body.copyWith(
-                      fontSize: 15,
-                      height: 1.35,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: _DisclaimerPill(),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      child: HomeScaled(child: _hero()),
+    );
+  }
 
-          // Mascot head (top-left, overlaps the card)
-          Positioned(
-            left: 0,
-            top: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/illustrations/chat_welcome_head.png',
-                width: _headWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
+  Widget _hero() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: _cardTop),
+          child: GradientSurface(
+            background: AppGradients.chatWelcome,
+            borderRadius: _cardRadius,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              AppSpacing.m,
+              AppSpacing.l,
+              AppSpacing.m,
+            ),
+            child: const _GreetingText(),
+          ),
+        ),
+        Positioned(
+          left: AppSpacing.s,
+          top: -_headOverhang,
+          child: IgnorePointer(
+            child: Image.asset(
+              'assets/illustrations/chat_welcome_head.png',
+              width: _headWidth,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
             ),
           ),
+        ),
+        Positioned(
+          right: -5,
+          bottom: -_tailOverhang,
+          child: IgnorePointer(
+            child: Image.asset(
+              'assets/illustrations/chat_welcome_tail.png',
+              width: _tailWidth,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-          // Mascot tail (bottom-right, overlaps the card)
-          Positioned(
-            right: -6,
-            bottom: 0,
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/illustrations/chat_welcome_tail.png',
-                width: _tailWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-              ),
-            ),
+class _GreetingText extends StatelessWidget {
+  const _GreetingText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: AppSpacing.s,
+      children: [
+        // On the right, next to the mascot head.
+        Text.rich(
+          TextSpan(
+            style: AppTextStyles.chatGreeting,
+            children: [
+              TextSpan(text: 'Hi! ', style: AppTextStyles.chatGreetingAccent),
+              const TextSpan(text: 'I’m your\nHealth Assistant'),
+            ],
           ),
-        ],
-      ),
+          textAlign: TextAlign.right,
+        ),
+        Text(
+          'Ask about symptoms, find a doctor near you or check what to do '
+          'next. I’ll keep answers short and clear.',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.body,
+        ),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: _DisclaimerPill(),
+        ),
+      ],
     );
   }
 }
@@ -132,34 +135,22 @@ class _DisclaimerPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.control),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.m,
-          vertical: AppSpacing.s,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: AppSpacing.s,
-          children: [
-            const Icon(
-              Icons.shield_outlined,
-              size: 20,
-              color: AppColors.actionPurple,
-            ),
-            Text(
-              'Not a diagnosis · Emergencies: 112',
-              style: AppTextStyles.body.copyWith(
-                fontSize: 14,
-                color: AppColors.ink,
-              ),
-            ),
-          ],
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: AppSpacing.xs,
+        children: [
+          const Icon(Icons.shield_outlined, size: 20, color: AppColors.actionPurple),
+          Text('Not a diagnosis · Emergencies: 112', style: AppTextStyles.meta),
+        ],
       ),
     );
   }

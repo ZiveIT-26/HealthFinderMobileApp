@@ -68,6 +68,20 @@ abstract final class AppGradients {
     ],
   );
 
+  /// AI chat: welcome hero card under the mascot.
+  static const chatWelcome = CardBackground(
+    base: LinearGradient(
+      begin: Alignment(-0.79, -0.62), // 128deg, as in Figma
+      end: Alignment(0.79, 0.62),
+      colors: [Color(0xFFC881FF), Color(0xFFF6ABFF), Color(0xFFFFEADD)],
+      stops: [0, 0.55, 1],
+    ),
+    glows: [
+      Glow(center: Alignment(-0.50, 0.74), radiusX: 0.80, radiusY: 0.50, color: Color(0xFFFF97BC), opacity: 0.8),
+      Glow(center: Alignment(-0.10, 0.10), radiusX: 0.65, radiusY: 0.55, color: Color(0xFFFFF1D6), opacity: 0.5),
+    ],
+  );
+
   /// Medication row that is still due: white fading to lilac on the right.
   static const medicationDue = LinearGradient(
     colors: [Color(0xFFFFFFFF), Color(0xFFFFFFFF), Color(0xFFE4D2F9)],

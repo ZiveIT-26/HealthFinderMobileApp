@@ -9,16 +9,18 @@ class GradientSurface extends StatelessWidget {
     required this.background,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.card),
+    this.borderRadius = const BorderRadius.all(Radius.circular(AppRadius.card)),
   });
 
   final CardBackground background;
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.card),
+      borderRadius: borderRadius,
       child: DecoratedBox(
         decoration: BoxDecoration(gradient: background.base),
         child: Stack(

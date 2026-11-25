@@ -144,15 +144,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   /// Greeting card + "Try asking" chips. Scrolls if the keyboard shrinks the space.
   Widget _buildWelcome() {
-    return SingleChildScrollView(
+    // Full height, so AnimatedSwitcher (which centers smaller children)
+    // keeps the welcome content at the top.
+    return SizedBox.expand(
       key: const ValueKey('welcome'),
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const ChatGreeting(),
-          ChatSuggestions(onSelected: _send),
-        ],
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const ChatGreeting(),
+            ChatSuggestions(onSelected: _send),
+          ],
+        ),
       ),
     );
   }
