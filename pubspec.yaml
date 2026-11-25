@@ -40,10 +40,19 @@ dependencies:
   url_launcher: ^6.3.3
   flutter_dotenv: ^6.0.2
   speech_to_text: ^7.5.0
+  shared_preferences: ^2.3.0
   google_sign_in: ^7.2.0
-  flutter_secure_storage: ^11.2.0
   
   material_ui: ^1.11.1
+  flutter_secure_storage: ^11.2.0
+
+  # Local database (encrypted), see docs/storage/local-database.md
+  drift: ^2.35.4
+  sqlite3: ^3.9.1
+  path_provider: ^2.1.6
+  path: ^1.9.0
+  uuid: ^4.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -54,6 +63,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # Generates the drift database code: dart run build_runner build
+  drift_dev: ^2.35.3
+  build_runner: ^2.16.2
+
+# Bundles SQLite3MultipleCiphers instead of plain SQLite, for encryption.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

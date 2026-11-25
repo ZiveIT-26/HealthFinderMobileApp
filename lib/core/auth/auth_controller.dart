@@ -2,29 +2,36 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
+import '../data/repositories.dart';
 import '../network/authorized_client.dart';
+import '../session/dev_account.dart';
+import '../storage/secure_store.dart';
 import 'auth_api.dart';
 import 'auth_user.dart';
-import 'token_storage.dart';
 
 /// App-wide auth state. Created in main() before runApp.
 late final AuthController authController;
 
-/// Holds the backend session and runs the sign-in / sign-out flows.
+/// Runs the sign-in flows against Google and the backend.
 ///
 /// Flow: Google account picker -> Google ID token -> POST /auth/google
-/// -> backend JWT saved in secure storage -> sent as Bearer on API calls.
+/// -> backend JWT into [SecureStore], account into `AccountService.signIn`
+/// (the cached profile is refreshed on every sign-in).
+/// Storage and sign-out are done by `AccountService`; this class only adds
+/// the network part and keeps the token in memory for API calls.
 /// The backend issues a 90-day token without refresh, so a 401 signs the user out.
 class AuthController extends ChangeNotifier {
   AuthController(
     this._api,
-    this._storage, {
+    this._secure,
+    this._repositories, {
     this.googleServerClientId,
     this.googleIosClientId,
   });
 
   final AuthApi _api;
-  final TokenStorage _storage;
+  final SecureStore _secure;
+  final Repositories _repositories;
 
   /// Web OAuth client ID; the backend checks the ID token audience against it.
   final String? googleServerClientId;
@@ -32,26 +39,41 @@ class AuthController extends ChangeNotifier {
   /// iOS OAuth client ID (optional if set in Info.plist as GIDClientID).
   final String? googleIosClientId;
 
-  AuthSession? _session;
+  /// Kept in memory: every secure storage read goes through a platform channel.
+  String? _accessToken;
   Future<void>? _googleInit;
 
-  AuthUser? get user => _session?.user;
-  bool get isSignedIn => _session != null;
+  /// Signed in = a token and a cached profile.
+  bool get isSignedIn =>
+      _accessToken != null && _repositories.currentUser.isSignedIn;
 
-  /// Restores a saved session. Call once before runApp.
+  /// Restores the session at startup. Call once before runApp.
+  ///
+  /// Without a readable token the user is treated as signed out, but the
+  /// cached profile is not deleted: on iOS the read can fail only until the
+  /// first unlock, and the next sign-in to the same account keeps its chat cache.
   Future<void> init() async {
-    _session = await _storage.read();
+    final token = await _secure.readAccessToken();
+    if (token == null) return;
+
+    try {
+      await _repositories.account.restore();
+    } catch (error) {
+      // The database could not be opened (for example, on iOS the key is not
+      // readable before the first unlock). Start as signed out.
+      debugPrint('Could not restore the session: $error');
+      return;
+    }
+    if (_repositories.currentUser.isSignedIn) _accessToken = token;
   }
 
   /// Interactive Google sign-in. Returns normally if the user cancels.
   /// Throws [AuthException] on any other failure.
   Future<void> signInWithGoogle() async {
-    final google = GoogleSignIn.instance;
-
     final GoogleSignInAccount account;
     try {
       await _ensureGoogleInitialized();
-      account = await google.authenticate();
+      account = await GoogleSignIn.instance.authenticate();
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         // Misconfiguration (SHA-1, package name, client IDs) can also look like this.
@@ -67,18 +89,31 @@ class AuthController extends ChangeNotifier {
       throw const AuthException('Google did not return an ID token.');
     }
 
-    await _setSession(await _api.signInWithGoogle(idToken));
+    final session = await _api.signInWithGoogle(idToken);
+    await _secure.writeAccessToken(session.accessToken);
+    await _repositories.account.signIn(session.profile);
+    _setToken(session.accessToken);
   }
 
-  /// Dev-only shortcut, see POST /auth/test-login.
+  /// Debug only: the backend test user (POST /auth/test-login) with the
+  /// sample medical card from `dev_account.dart`.
   Future<void> signInForTesting() async {
-    await _setSession(await _api.signInForTesting());
+    final session = await _api.signInForTesting();
+    await _secure.writeAccessToken(session.accessToken);
+    // Same user id as the backend test user; also seeds an untouched card.
+    await signInDevelopmentAccount(
+      account: _repositories.account,
+      personalInfo: _repositories.personalInfo,
+      medicalCard: _repositories.medicalCard,
+    );
+    _setToken(session.accessToken);
   }
 
+  /// Deletes the profile, chat cache and tokens (see `AccountService.signOut`).
+  /// The medical card stays on the device for the next sign-in.
   Future<void> signOut() async {
-    _session = null;
-    await _storage.clear();
-    notifyListeners();
+    await _repositories.account.signOut();
+    _setToken(null);
 
     // Forget the Google account so the picker is shown next time.
     if (_googleInit != null) {
@@ -92,13 +127,18 @@ class AuthController extends ChangeNotifier {
 
   /// HTTP client for backend calls that need the user's token.
   http.Client createClient() => AuthorizedClient(
-        token: () => _session?.accessToken,
+        token: () => _accessToken,
         onUnauthorized: _onUnauthorized,
       );
 
   void _onUnauthorized(String rejectedToken) {
     // Ignore late 401s for a token that has already been replaced.
-    if (_session?.accessToken == rejectedToken) signOut();
+    if (_accessToken == rejectedToken) signOut();
+  }
+
+  void _setToken(String? token) {
+    _accessToken = token;
+    notifyListeners();
   }
 
   /// GoogleSignIn.initialize may be called only once per app run.
@@ -112,13 +152,5 @@ class AuthController extends ChangeNotifier {
       _googleInit = null; // allow a retry after a failed init
       rethrow;
     }
-  }
-
-  /// Called on every sign-in. The backend refreshes name, email and avatar
-  /// from the Google account, so the cached user is overwritten each time.
-  Future<void> _setSession(AuthSession session) async {
-    await _storage.save(session);
-    _session = session;
-    notifyListeners();
   }
 }

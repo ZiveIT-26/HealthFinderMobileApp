@@ -3,22 +3,26 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app.dart';
 import 'core/auth/auth_api.dart';
 import 'core/auth/auth_controller.dart';
-import 'core/auth/token_storage.dart';
+import 'core/data/repositories.dart';
+import 'core/storage/app_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/app.env');
+  final storage = await AppStorage.init();
+  final repositories = Repositories(storage);
 
   authController = AuthController(
     AuthApi(dotenv.get('BACKEND_URL')),
-    TokenStorage(),
+    storage.secure,
+    repositories,
     googleServerClientId: _env('GOOGLE_SERVER_CLIENT_ID'),
     googleIosClientId: _env('GOOGLE_IOS_CLIENT_ID'),
   );
-  // Read the saved session first, so the router knows where to start.
+  // Restore the session first, so the router knows where to start.
   await authController.init();
 
-  runApp(const App());
+  runApp(App(preferences: storage.preferences, repositories: repositories));
 }
 
 String? _env(String key) {

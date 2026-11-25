@@ -1,14 +1,42 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/auth/auth_controller.dart';
+import '../../../../core/data/repositories.dart';
+import '../../../../core/formatting/dates.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_rows_card.dart';
+import '../../../medical_card/data/models/medical_card_data.dart';
+import '../../data/models/personal_info.dart';
+import '../../data/models/profile.dart';
 import '../../data/profile_mock_data.dart';
 import '../widgets/profile_sections.dart';
 
-class ProfileScreen extends StatelessWidget {
+const _notSet = 'Not set';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Stream<Profile?>? _profile;
+  Stream<PersonalInfo>? _personalInfo;
+  Stream<MedicalCardData>? _medicalCard;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_profile != null) return;
+    final repositories = RepositoriesScope.of(context);
+    _profile = repositories.profile.watch();
+    if (repositories.currentUser.isSignedIn) {
+      _personalInfo = repositories.personalInfo.watch();
+      _medicalCard = repositories.medicalCard.watch();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,47 +48,81 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.l, AppSpacing.l, 42),
-                children: [
-                  for (final section in [
-                    // Account data from the last sign-in; rebuilds when it changes.
-                    ListenableBuilder(
-                      listenable: authController,
-                      builder: (context, _) {
-                        final user = authController.user;
-                        return ProfileHero(
-                          name: user?.name ?? ProfileMockData.name,
-                          subtitle: user?.email ?? ProfileMockData.subtitle,
-                          avatarUrl: user?.avatarUrl,
-                        );
-                      },
+              child: StreamBuilder<Profile?>(
+                stream: _profile,
+                builder: (context, profile) => StreamBuilder<PersonalInfo>(
+                  stream: _personalInfo,
+                  builder: (context, personal) =>
+                      StreamBuilder<MedicalCardData>(
+                    stream: _medicalCard,
+                    builder: (context, card) => _content(
+                      profile.data,
+                      personal.data ?? PersonalInfo.empty,
+                      card.data ?? MedicalCardData.empty,
                     ),
-                    const InfoRowsCard(
-                      rows: ProfileMockData.details,
-                      padding: EdgeInsets.fromLTRB(14, 9, 14, 0),
-                    ),
-                    for (final group in ProfileMockData.groups) ...[
-                      SettingsGroupTitle(group.title),
-                      for (final item in group.items) SettingsRow(item: item),
-                    ],
-                    AppButton.soft(
-                      label: 'Sign out',
-                      size: AppButtonSize.large,
-                      expanded: true,
-                      onTap: authController.signOut,
-                    ),
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: section,
-                    ),
-                ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _content(
+    Profile? profile,
+    PersonalInfo personal,
+    MedicalCardData card,
+  ) {
+    final subtitle = [
+      personal.fallbackLocation?.label,
+      profile?.email,
+    ].whereType<String>().join(' · ');
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.l, AppSpacing.l, AppSpacing.l, 42),
+      children: [
+        for (final section in [
+          ProfileHero(
+            name: profile?.name ?? 'Not signed in',
+            subtitle: subtitle,
+            avatarUrl: profile?.avatarUrl,
+          ),
+          InfoRowsCard(
+            rows: [
+              InfoRow(
+                'Date of birth',
+                personal.dateOfBirth == null
+                    ? _notSet
+                    : formatDate(personal.dateOfBirth!),
+              ),
+              InfoRow('Blood type', card.card.bloodType?.label ?? _notSet),
+              InfoRow(
+                'Emergency contact',
+                card.primaryContact?.name ?? _notSet,
+              ),
+            ],
+            padding: const EdgeInsets.fromLTRB(14, 9, 14, 0),
+          ),
+          for (final group in ProfileMockData.groups) ...[
+            SettingsGroupTitle(group.title),
+            for (final item in group.items) SettingsRow(item: item),
+          ],
+          AppButton.text(
+            'Sign out',
+            variant: AppButtonVariant.soft,
+            size: AppButtonSize.large,
+            expanded: true,
+            onTap: authController.signOut,
+          ),
+        ])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: section,
+          ),
+      ],
     );
   }
 }

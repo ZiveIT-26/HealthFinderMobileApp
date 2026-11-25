@@ -1,46 +1,25 @@
-/// The signed-in user, as returned by the backend in `POST /auth/google`.
-class AuthUser {
-  const AuthUser({
-    required this.id,
-    required this.email,
-    this.displayName,
-    this.avatarUrl,
-  });
+import '../../features/profile/data/models/profile.dart';
 
-  final String id;
-  final String email;
-  final String? displayName;
-  final String? avatarUrl;
-
-  /// Name to show in the UI; falls back to the email.
-  String get name => (displayName?.trim().isNotEmpty ?? false) ? displayName! : email;
-
-  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-        id: json['id'] as String,
-        email: json['email'] as String,
-        displayName: json['displayName'] as String?,
-        avatarUrl: json['avatarUrl'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'email': email,
-        'displayName': displayName,
-        'avatarUrl': avatarUrl,
-      };
-}
-
-/// Backend session: the backend JWT plus the user it belongs to.
+/// Response of `POST /auth/google` and `POST /auth/test-login`:
+/// the backend JWT and the account it belongs to.
 class AuthSession {
-  const AuthSession({required this.accessToken, required this.user});
+  const AuthSession({required this.accessToken, required this.profile});
 
   final String accessToken;
-  final AuthUser user;
+  final Profile profile;
 
-  factory AuthSession.fromJson(Map<String, dynamic> json) => AuthSession(
-        accessToken: json['accessToken'] as String,
-        user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
-      );
+  factory AuthSession.fromJson(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>;
+    return AuthSession(
+      accessToken: json['accessToken'] as String,
+      profile: Profile(
+        userId: user['id'] as String,
+        email: user['email'] as String,
+        displayName: user['displayName'] as String?,
+        avatarUrl: user['avatarUrl'] as String?,
+      ),
+    );
+  }
 }
 
 /// Sign-in failure with a message that can be shown to the user.

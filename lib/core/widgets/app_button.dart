@@ -32,47 +32,105 @@ enum AppButtonSize {
   final double padding;
 }
 
-/// Generic button: icon only, label only, or icon + label.
+/// Generic button that accepts any widgets as content.
+///
+/// Content is laid out as `[leading] [child] [trailing]`. Every slot is
+/// optional, but at least one must be provided.
+///
+/// [Icon] and [Text] placed in any slot automatically inherit the button's
+/// foreground color, icon size and font size (via [IconTheme] and
+/// [DefaultTextStyle]).
 ///
 /// ```dart
-/// AppButton(label: 'Book', onTap: ...)                       // text only
-/// AppButton(icon: Icons.add, onTap: ..., tooltip: 'Add')     // icon only
-/// AppButton(icon: Icons.add, label: 'Add', onTap: ...)       // both
-/// AppButton(label: 'Book', variant: AppButtonVariant.soft)   // inverted colors
-/// AppButton(label: 'Book', size: AppButtonSize.large, expanded: true)
+/// // Anything as content
+/// AppButton(child: Text('Book'), onTap: ...)
+/// AppButton(leading: Icon(Icons.add), child: Text('Add'), onTap: ...)
+/// AppButton(child: MyBadge(count: 3), trailing: Icon(Icons.chevron_right))
+/// AppButton(leading: Icon(Icons.add), tooltip: 'Add', onTap: ...) // square
+///
+/// // Shortcuts
+/// AppButton.text('Book', onTap: ...)
+/// AppButton.icon(Icons.add, tooltip: 'Add', onTap: ...)
 /// ```
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
-    this.icon,
-    this.label,
+    this.leading,
+    this.child,
+    this.trailing,
     this.onTap,
     this.variant = AppButtonVariant.filled,
     this.size = AppButtonSize.medium,
     this.expanded = false,
     this.tooltip,
+    this.backgroundColor,
+    this.foregroundColor,
   }) : assert(
-          icon != null || label != null,
-          'AppButton needs at least an icon or a label',
+          leading != null || child != null || trailing != null,
+          'AppButton needs at least one of leading, child or trailing',
         );
 
-  /// Shortcut for the light variant, same as the old `PillButton.soft`.
-  const AppButton.soft({
-    super.key,
-    this.icon,
-    this.label,
-    this.onTap,
-    this.size = AppButtonSize.medium,
-    this.expanded = false,
-    this.tooltip,
-  })  : variant = AppButtonVariant.soft,
-        assert(
-          icon != null || label != null,
-          'AppButton needs at least an icon or a label',
-        );
+  /// Text-only shortcut.
+  factory AppButton.text(
+    String label, {
+    Key? key,
+    Widget? leading,
+    Widget? trailing,
+    VoidCallback? onTap,
+    AppButtonVariant variant = AppButtonVariant.filled,
+    AppButtonSize size = AppButtonSize.medium,
+    bool expanded = false,
+    String? tooltip,
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
+    return AppButton(
+      key: key,
+      leading: leading,
+      trailing: trailing,
+      onTap: onTap,
+      variant: variant,
+      size: size,
+      expanded: expanded,
+      tooltip: tooltip,
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      child: Text(label),
+    );
+  }
 
-  final IconData? icon;
-  final String? label;
+  /// Icon-only (square) shortcut.
+  factory AppButton.icon(
+    IconData icon, {
+    Key? key,
+    VoidCallback? onTap,
+    AppButtonVariant variant = AppButtonVariant.filled,
+    AppButtonSize size = AppButtonSize.medium,
+    String? tooltip,
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
+    return AppButton(
+      key: key,
+      leading: Icon(icon),
+      onTap: onTap,
+      variant: variant,
+      size: size,
+      tooltip: tooltip,
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+    );
+  }
+
+  /// Widget shown before [child].
+  final Widget? leading;
+
+  /// Main content. Usually a [Text], but can be any widget.
+  final Widget? child;
+
+  /// Widget shown after [child].
+  final Widget? trailing;
+
   final VoidCallback? onTap;
   final AppButtonVariant variant;
   final AppButtonSize size;
@@ -80,29 +138,38 @@ class AppButton extends StatelessWidget {
   /// Stretch to the full available width.
   final bool expanded;
 
-  /// Accessibility label. Strongly recommended for icon-only buttons.
+  /// Accessibility label / hover tooltip. Strongly recommended for
+  /// buttons without text.
   final String? tooltip;
 
-  bool get _iconOnly => label == null;
+  /// Overrides the variant's background color.
+  final Color? backgroundColor;
+
+  /// Overrides the variant's foreground color (text and icons).
+  final Color? foregroundColor;
+
+  /// Only one widget and no text -> render as a square button.
+  bool get _square => child == null && (leading != null) != (trailing != null);
 
   @override
   Widget build(BuildContext context) {
-    final (background, foreground) = switch (variant) {
+    final (defaultBackground, defaultForeground) = switch (variant) {
       AppButtonVariant.filled => (AppColors.colorPressed, AppColors.textOnAction),
       AppButtonVariant.soft => (AppColors.colorSoft, AppColors.colorPressed),
     };
+    final background = backgroundColor ?? defaultBackground;
+    final foreground = foregroundColor ?? defaultForeground;
 
     final radius = BorderRadius.circular(size.radius);
 
-    Widget content;
-    if (_iconOnly) {
-      // Square button.
-      content = SizedBox.square(
+    final Widget inner;
+    if (_square) {
+      inner = SizedBox.square(
         dimension: size.height,
-        child: Icon(icon, size: size.icon, color: foreground),
+        child: Center(child: leading ?? trailing),
       );
     } else {
-      content = SizedBox(
+      inner = SizedBox(
         height: size.height,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: size.padding),
@@ -111,23 +178,29 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: AppSpacing.s,
             children: [
-              if (icon != null) Icon(icon, size: size.icon, color: foreground),
-              Flexible(
-                child: Text(
-                  label!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.pillButton.copyWith(
-                    color: foreground,
-                    fontSize: size.fontSize,
-                  ),
-                ),
-              ),
+              if (leading != null) leading!,
+              if (child != null) Flexible(child: child!),
+              if (trailing != null) trailing!,
             ],
           ),
         ),
       );
     }
+
+    // Children inherit color / sizes from here, so a plain Icon() or Text()
+    // looks correct without any styling.
+    final content = IconTheme(
+      data: IconThemeData(color: foreground, size: size.icon),
+      child: DefaultTextStyle(
+        style: AppTextStyles.pillButton.copyWith(
+          color: foreground,
+          fontSize: size.fontSize,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        child: inner,
+      ),
+    );
 
     Widget button = Material(
       color: background,
@@ -144,16 +217,14 @@ class AppButton extends StatelessWidget {
       button = Opacity(opacity: 0.5, child: button);
     }
 
-    final semanticLabel = tooltip ?? label;
     if (tooltip != null) {
       button = Tooltip(message: tooltip!, child: button);
     }
 
+    // No excludeSemantics: a Text passed as child keeps its own label.
     return Semantics(
       button: true,
       enabled: onTap != null,
-      label: semanticLabel,
-      excludeSemantics: true,
       child: button,
     );
   }

@@ -8,11 +8,7 @@ import 'package:material_ui/material_ui.dart';
 /// The width always fills the screen: on screens with a different aspect
 /// ratio the virtual canvas becomes slightly wider (or taller) than the design.
 class FitToScreen extends StatelessWidget {
-  const FitToScreen({
-    super.key,
-    required this.designSize,
-    required this.child,
-  });
+  const FitToScreen({super.key, required this.designSize, required this.child});
 
   final Size designSize;
   final Widget child;
@@ -21,6 +17,10 @@ class FitToScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
+          return const SizedBox.shrink();
+        }
+
         final scale = math.min(
           constraints.maxWidth / designSize.width,
           constraints.maxHeight / designSize.height,

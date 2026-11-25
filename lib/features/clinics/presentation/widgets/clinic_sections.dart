@@ -1,8 +1,8 @@
+import 'package:health_finder/core/widgets/app_button.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/content_card.dart';
-import '../../../../core/widgets/pill_button.dart';
 import '../../data/clinic_mock_data.dart';
 
 /// Top card with category, clinic name and doctor.
@@ -42,11 +42,26 @@ class ClinicActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       spacing: 10,
       children: [
-        Expanded(child: PillButton(icon: Icons.phone_outlined, label: 'Call Clinic')),
-        Expanded(child: PillButton.soft(icon: Icons.location_on_outlined, label: 'Directions')),
+        Expanded(
+          child: AppButton.text(
+            'Call Clinic',
+            leading: Icon(Icons.phone_outlined),
+            expanded: true,
+            onTap: () {},
+          ),
+        ),
+        Expanded(
+          child: AppButton.text(
+            'Directions',
+            leading: Icon(Icons.location_on_outlined),
+            variant: AppButtonVariant.soft,
+            expanded: true,
+            onTap: () {},
+          ),
+        ),
       ],
     );
   }

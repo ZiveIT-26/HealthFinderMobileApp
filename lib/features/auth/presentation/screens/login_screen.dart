@@ -58,16 +58,17 @@ class _LoginScreenState extends State<LoginScreen> {
               style: AppTextStyles.body,
             ),
             const Spacer(),
-            AppButton(
-              label: _busy ? 'Signing in...' : 'Continue with Google',
+            AppButton.text(
+              _busy ? 'Signing in...' : 'Continue with Google',
               size: AppButtonSize.large,
               expanded: true,
               onTap: _busy ? null : () => _run(authController.signInWithGoogle),
             ),
             if (kDebugMode) ...[
               const SizedBox(height: AppSpacing.m),
-              AppButton.soft(
-                label: 'Test login (debug only)',
+              AppButton.text(
+                'Test login (debug only)',
+                variant: AppButtonVariant.soft,
                 size: AppButtonSize.large,
                 expanded: true,
                 onTap: _busy ? null : () => _run(authController.signInForTesting),
