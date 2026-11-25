@@ -1,5 +1,5 @@
+import 'package:health_finder/core/widgets/app_button.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:health_finder/core/widgets/choice_button.dart';
 
 import '../../../core/theme/app_text_styles.dart';
 
@@ -35,9 +35,9 @@ class LanguagePicker extends StatelessWidget {
         const SizedBox(height: 9), // heading box 32px -> buttons start at 41px
         for (var i = 0; i < options.length; i++) ...[
           if (i > 0) const SizedBox(height: 12),
-          ChoiceButton(
-            label: options[i].label,
-            onPressed: () => onSelected(options[i].locale),
+          AppButton(
+            child: Text(options[i].label),
+            onTap: () => onSelected(options[i].locale),
           ),
         ],
       ],

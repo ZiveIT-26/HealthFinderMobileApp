@@ -20,14 +20,14 @@ class ChatHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          AppButton(
-            icon: Icons.history,
+          AppButton.icon(
+            Icons.history,
             onTap: onNewChat,
             size: AppButtonSize.medium,
             tooltip: 'Chats history',
           ),
-          AppButton(
-            icon: Icons.add,
+          AppButton.icon(
+            Icons.add,
             onTap: onNewChat,
             size: AppButtonSize.medium,
             tooltip: 'New chat',

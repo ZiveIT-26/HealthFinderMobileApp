@@ -1,10 +1,10 @@
+import 'package:health_finder/core/widgets/app_button.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/detail_heading.dart';
 import '../../../../core/widgets/info_rows_card.dart';
 import '../../../../core/widgets/page_header.dart';
-import '../../../../core/widgets/pill_button.dart';
 import '../../data/medical_card_mock_data.dart';
 import '../widgets/medical_card_hero.dart';
 
@@ -30,7 +30,7 @@ class MedicalCardScreen extends StatelessWidget {
                       InfoRowsCard(rows: s.rows, tinted: true),
                     ],
                     // Not interactive yet: there is no edit screen.
-                    const PillButton(icon: Icons.edit_outlined, label: 'Edit Medical Card'),
+                    AppButton.text('Edit Medical Card', leading: Icon(Icons.edit_outlined)),
                     Text(MedicalCardMockData.storageNote, style: AppTextStyles.caption),
                   ])
                     Padding(
