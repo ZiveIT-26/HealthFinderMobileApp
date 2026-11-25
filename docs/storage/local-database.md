@@ -17,12 +17,14 @@ offline. Preferences and secure storage are for small key-value data only.
 | Profile | Backend | Cached copy, read by the profile screen | Cleared |
 | Personal info | **Phone** | Only copy, per account | Kept |
 | Medical card | **Phone** | Only copy, per account | Kept |
+| User settings, consents | **Phone** | Only copy, per account | Kept |
 | Chats, messages | Backend | Full copy for offline reading | Cleared |
 | Clinics found in chats | Backend (message payload) | Full copy for offline reading | Cleared |
 | Medications, intakes, mood | **Phone** | Only copy. Designed later | Kept |
 
-Not stored here: tokens and the database key (secure storage), settings and
-consents (preferences), images (file cache).
+Not stored here: tokens and the database key (secure storage), device
+settings such as language, theme and app lock (preferences), images (file
+cache).
 
 ## Engine and encryption
 
@@ -80,7 +82,7 @@ is a personal health record, not an official medical record.
 ## AI chat and the medical card
 
 - The medical card and medications may be sent to the chat as context only
-  with `aiContextConsent` (see `preferences.md`).
+  with the `aiContext` consent (table `consents`).
 - Send only the fields a request needs, not the whole card.
 - The chat uses the card as context (e.g. allergies and current medications
   when answering). It does not assess risk, diagnose or give a "risk level":
@@ -89,7 +91,7 @@ is a personal health record, not an official medical record.
 - The backend must not log request bodies, otherwise the card ends up on the
   server through logs. Check the LLM provider's data retention settings.
 - Chat history itself is stored on the backend and contains health data, so
-  `aiChatConsent` is required and the backend team must protect it.
+  the `aiChat` consent is required and the backend team must protect it.
 - The backend's `user_memories` lets the LLM save allergies, conditions and
   medications mentioned in the chat. That is health data on the server, outside
   the medical card, and the user cannot see or delete it. To discuss with the
@@ -108,12 +110,13 @@ user's data. Only the signed-in user's data is shown; nothing when signed out.
   are not needed for now.
 - The owner filter lives in the repositories: every query on phone-owned
   tables filters by the signed-in user, and screens never see `ownerUserId`.
-- Consents (`aiChatConsent`, `aiContextConsent`) stay in preferences, with the
-  user id in the key: `aiContextConsent.<userId>`. A second account on the
-  device starts without consents. "Delete my data" removes that user's keys.
-  Temporary: later move them to a `consents` table in the database (encrypted,
-  with a history of grants and revocations), or to the backend once it stores
-  consents (it does not yet).
+- Settings that belong to the user (reminders, server notifications) and
+  consents are in the database too (`user_settings`, `consents`), not in
+  preferences. Preferences keep only device settings that are needed before
+  sign-in or before the database can be opened (language, theme, onboarding,
+  app lock, first launch, terms accepted before sign-in).
+- A second account on the device starts with default settings and without
+  consents.
 
 ## Reading, refreshing, offline
 
@@ -152,7 +155,7 @@ user's data. Only the signed-in user's data is shown; nothing when signed out.
 |---|---|
 | `databaseKey()` throws | Temporary (e.g. iOS before the first unlock). Retry later. Never recreate the database because of this |
 | File exists, key does not | The file cannot be opened (e.g. restored from a backup). Delete the file and start with an empty database |
-| "Delete my data" | Per account. Hard delete (not `deletedAt`) of the signed-in user's `personal_info` and `medical_card` (lists cascade), removal of the user's consent keys, then sign-out (profile and chat cache cascade). Other accounts on the device are untouched. Server data (chats, memories) needs account deletion on the backend |
+| "Delete my data" | Per account. Hard delete (not `deletedAt`) of the signed-in user's `personal_info` and `medical_card` (lists cascade), `user_settings` and `consents` of the user, then sign-out (profile and chat cache cascade). Other accounts on the device are untouched. Server data (chats, memories) needs account deletion on the backend |
 
 ## Backup and sync (later)
 
@@ -186,8 +189,6 @@ migration.
 
 - Keep all chats locally, or only the last N?
 - Height and weight: one current value, or history?
-- Terms acceptance (`termsAcceptedVersion`): per device, or per account like
-  the consents? It may be accepted before sign-in, when the user id is unknown.
 
 To ask the backend team:
 
@@ -200,7 +201,8 @@ To ask the backend team:
 1. Add `drift` with encryption, open the database with
    `SecureStore.databaseKey()`, enable foreign keys, exclude the file from iOS
    backup.
-2. Tables for the phone-owned data: personal info, medical card and its lists.
+2. Tables for the phone-owned data: personal info, medical card and its lists,
+   user settings, consents.
 3. Repositories on top of the tables, with the owner filter, replacing the
    mock data.
 4. Google sign-in and the `Authorization` header, then the server-backed

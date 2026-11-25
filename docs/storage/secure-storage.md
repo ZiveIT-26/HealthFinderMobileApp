@@ -139,6 +139,7 @@ on Windows requires Developer Mode (`start ms-settings:developers`).
 
 | Data | Where instead |
 |---|---|
-| Settings, flags, consents | Preferences |
+| Device settings and flags | Preferences |
+| Per-account settings, consents | Local database |
 | Profile, medical card, medications, mood, chats, clinics | Local database |
 | Anything large | Local database or files |

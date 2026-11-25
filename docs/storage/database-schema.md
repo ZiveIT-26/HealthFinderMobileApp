@@ -15,6 +15,8 @@ be designed when they are implemented.
 erDiagram
     profile ||..o| personal_info : "1:1 by ownerUserId"
     profile ||..o| medical_card : "1:1 by ownerUserId"
+    profile ||..o| user_settings : "1:1 by ownerUserId"
+    profile ||..o{ consents : "1:N by ownerUserId"
     profile ||--o{ chats : "1:N"
     medical_card ||--o{ chronic_conditions : "1:N"
     medical_card ||--o{ allergies : "1:N"
@@ -39,6 +41,8 @@ phone-owned data is kept.
 | `implants` | Phone | Many | Kept | in review |
 | `surgeries` | Phone | Many | Kept | in review |
 | `emergency_contacts` | Phone | Many | Kept | in review |
+| `user_settings` | Phone | One per account | Kept | in review |
+| `consents` | Phone | Many per account | Kept | in review |
 | `chats` | Backend | Many | Cleared | in review |
 | `messages` | Backend | Many | Cleared | in review |
 | `clinics` | Backend (inside message `payload`) | Many | Cleared | in review |
@@ -48,15 +52,15 @@ phone-owned data is kept.
 | Field | Where | Why |
 |---|---|---|
 | `id` (UUID) | Every table | No clashes between records created on different devices |
-| `updatedAt` | Every phone-owned table | Which version is newer |
-| `deletedAt` | Phone-owned tables with many rows | Soft delete, for a future backup |
+| `updatedAt` | Every phone-owned table, except `consents` | Which version is newer. `consents` rows are only added or revoked (`revokedAt`) |
+| `deletedAt` | Phone-owned tables with many rows, except `consents` | Soft delete, for a future backup. `consents` keeps its history instead |
 | `serverId` | Server-backed tables, when the server returns an id | Link to the backend record |
 | `syncedAt` / `fetchedAt` | Server-backed tables | When the copy was last refreshed |
 
 ## Several accounts on one device
 
-Phone-owned data (`personal_info`, `medical_card` and its lists) is kept per
-account, by `ownerUserId`. The app shows only the data of the signed-in user;
+Phone-owned data (`personal_info`, `medical_card` and its lists,
+`user_settings`, `consents`) is kept per account, by `ownerUserId`. The app shows only the data of the signed-in user;
 when nobody is signed in, it shows none. If another user signs in, both keep
 their data.
 
@@ -113,7 +117,8 @@ One card per account plus one table per list. List rows point to their card
 with `medicalCardId`, so deleting a card deletes its lists.
 
 All entries are self-reported and shown as "My records". The app stores and
-shows them, and may send them to the chat as context with `aiContextConsent`.
+shows them, and may send them to the chat as context with the `aiContext`
+consent (table `consents`).
 It never assesses or scores them (EU MDR).
 
 Current medications are not stored here: the card will show them from
@@ -184,6 +189,50 @@ Implants and medical devices: pacemaker, insulin pump, prostheses.
 | `isPrimary` | bool | no | At most one primary per card: unique index on `medicalCardId` where `isPrimary` and not deleted |
 
 Postponed items are listed in `local-database.md` → "Postponed".
+
+## user_settings
+
+Per-account settings. Device settings (language, theme, onboarding, app lock,
+first launch) stay in preferences: they are needed before sign-in or before the
+database can be opened. See `preferences.md`.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `ownerUserId` | text, unique | no | `user.id` from the backend |
+| `medicationRemindersEnabled` | bool | no | Default true. Scheduled locally |
+| `repeatReminderMinutes` | int | yes | Repeat an unmarked reminder after N minutes. Null: no repeat |
+| `moodRemindersEnabled` | bool | no | Default true. Scheduled locally |
+| `moodReminderTime` | text "HH:mm" | no | Default "20:00" |
+| `healthAlertsEnabled` | bool | no | Default true. Sent by the server: send to the backend once it accepts it |
+| `recommendationsEnabled` | bool | no | Default false. Sent by the server, as above |
+| `updatedAt` | datetime | no | |
+
+The row is created with the defaults on the user's first sign-in.
+
+## consents
+
+One row per grant, so the history is kept. Revoking sets `revokedAt` on the
+active row; granting again adds a new row.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `ownerUserId` | text | no | `user.id` from the backend. Index with `type` |
+| `type` | enum (terms / aiChat / aiContext) | no | |
+| `version` | int | no | Version of the consent text, from `ConsentVersions` |
+| `grantedAt` | datetime | no | |
+| `revokedAt` | datetime | yes | Null: still active |
+
+A consent is valid when its latest row for the type has no `revokedAt` and
+`version` >= the current `ConsentVersions` value.
+
+Terms are accepted before sign-in, so they are first stored on the device
+(`termsAcceptedVersion` in preferences). After sign-in, a `terms` row is added
+here if the user has none for the current version.
+
+"Delete my data" removes the rows, like the rest of the user's data. Proof of
+consent for the server belongs on the backend once it has an endpoint for it.
 
 ## chats
 
