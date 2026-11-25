@@ -71,6 +71,31 @@ class MedicalCard {
     return !date.isAfter(DateTime(due.year, due.month, due.day));
   }
 
+  /// Same values, so a form can tell whether it has unsaved changes.
+  @override
+  bool operator ==(Object other) =>
+      other is MedicalCard &&
+      other.bloodType == bloodType &&
+      other.insuranceCompany == insuranceCompany &&
+      other.insuranceCompanyOther == insuranceCompanyOther &&
+      other.gpName == gpName &&
+      other.gpPhone == gpPhone &&
+      other.pregnancyDueDate == pregnancyDueDate &&
+      other.needsStepFreeAccess == needsStepFreeAccess &&
+      other.notes == notes;
+
+  @override
+  int get hashCode => Object.hash(
+        bloodType,
+        insuranceCompany,
+        insuranceCompanyOther,
+        gpName,
+        gpPhone,
+        pregnancyDueDate,
+        needsStepFreeAccess,
+        notes,
+      );
+
   /// Insurer name for the UI.
   String? get insuranceName => insuranceCompany == InsuranceCompany.other
       ? insuranceCompanyOther

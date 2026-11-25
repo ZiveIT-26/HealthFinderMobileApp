@@ -449,6 +449,17 @@ class $PersonalInfosTable extends PersonalInfos
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _dateOfBirthMeta = const VerificationMeta(
     'dateOfBirth',
   );
@@ -541,6 +552,7 @@ class $PersonalInfosTable extends PersonalInfos
   List<GeneratedColumn> get $columns => [
     id,
     ownerUserId,
+    displayName,
     dateOfBirth,
     sex,
     heightCm,
@@ -575,6 +587,15 @@ class $PersonalInfosTable extends PersonalInfos
       );
     } else if (isInserting) {
       context.missing(_ownerUserIdMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
     }
     if (data.containsKey('date_of_birth')) {
       context.handle(
@@ -647,6 +668,10 @@ class $PersonalInfosTable extends PersonalInfos
         DriftSqlType.string,
         data['${effectivePrefix}owner_user_id'],
       )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      ),
       dateOfBirth: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_of_birth'],
@@ -701,6 +726,9 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
   /// `user.id` from the backend. Not a foreign key: the profile is deleted
   /// on sign-out, this data is kept.
   final String ownerUserId;
+
+  /// Name shown in the app instead of the Google name. Local only.
+  final String? displayName;
   final DateTime? dateOfBirth;
   final Sex? sex;
   final int? heightCm;
@@ -712,6 +740,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
   const PersonalInfoRow({
     required this.id,
     required this.ownerUserId,
+    this.displayName,
     this.dateOfBirth,
     this.sex,
     this.heightCm,
@@ -726,6 +755,9 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['owner_user_id'] = Variable<String>(ownerUserId);
+    if (!nullToAbsent || displayName != null) {
+      map['display_name'] = Variable<String>(displayName);
+    }
     if (!nullToAbsent || dateOfBirth != null) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth);
     }
@@ -757,6 +789,9 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
     return PersonalInfosCompanion(
       id: Value(id),
       ownerUserId: Value(ownerUserId),
+      displayName: displayName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayName),
       dateOfBirth: dateOfBirth == null && nullToAbsent
           ? const Value.absent()
           : Value(dateOfBirth),
@@ -788,6 +823,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
     return PersonalInfoRow(
       id: serializer.fromJson<String>(json['id']),
       ownerUserId: serializer.fromJson<String>(json['ownerUserId']),
+      displayName: serializer.fromJson<String?>(json['displayName']),
       dateOfBirth: serializer.fromJson<DateTime?>(json['dateOfBirth']),
       sex: $PersonalInfosTable.$convertersexn.fromJson(
         serializer.fromJson<String?>(json['sex']),
@@ -810,6 +846,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'ownerUserId': serializer.toJson<String>(ownerUserId),
+      'displayName': serializer.toJson<String?>(displayName),
       'dateOfBirth': serializer.toJson<DateTime?>(dateOfBirth),
       'sex': serializer.toJson<String?>(
         $PersonalInfosTable.$convertersexn.toJson(sex),
@@ -828,6 +865,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
   PersonalInfoRow copyWith({
     String? id,
     String? ownerUserId,
+    Value<String?> displayName = const Value.absent(),
     Value<DateTime?> dateOfBirth = const Value.absent(),
     Value<Sex?> sex = const Value.absent(),
     Value<int?> heightCm = const Value.absent(),
@@ -839,6 +877,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
   }) => PersonalInfoRow(
     id: id ?? this.id,
     ownerUserId: ownerUserId ?? this.ownerUserId,
+    displayName: displayName.present ? displayName.value : this.displayName,
     dateOfBirth: dateOfBirth.present ? dateOfBirth.value : this.dateOfBirth,
     sex: sex.present ? sex.value : this.sex,
     heightCm: heightCm.present ? heightCm.value : this.heightCm,
@@ -860,6 +899,9 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
       ownerUserId: data.ownerUserId.present
           ? data.ownerUserId.value
           : this.ownerUserId,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
       dateOfBirth: data.dateOfBirth.present
           ? data.dateOfBirth.value
           : this.dateOfBirth,
@@ -884,6 +926,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
     return (StringBuffer('PersonalInfoRow(')
           ..write('id: $id, ')
           ..write('ownerUserId: $ownerUserId, ')
+          ..write('displayName: $displayName, ')
           ..write('dateOfBirth: $dateOfBirth, ')
           ..write('sex: $sex, ')
           ..write('heightCm: $heightCm, ')
@@ -900,6 +943,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
   int get hashCode => Object.hash(
     id,
     ownerUserId,
+    displayName,
     dateOfBirth,
     sex,
     heightCm,
@@ -915,6 +959,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
       (other is PersonalInfoRow &&
           other.id == this.id &&
           other.ownerUserId == this.ownerUserId &&
+          other.displayName == this.displayName &&
           other.dateOfBirth == this.dateOfBirth &&
           other.sex == this.sex &&
           other.heightCm == this.heightCm &&
@@ -928,6 +973,7 @@ class PersonalInfoRow extends DataClass implements Insertable<PersonalInfoRow> {
 class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
   final Value<String> id;
   final Value<String> ownerUserId;
+  final Value<String?> displayName;
   final Value<DateTime?> dateOfBirth;
   final Value<Sex?> sex;
   final Value<int?> heightCm;
@@ -940,6 +986,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
   const PersonalInfosCompanion({
     this.id = const Value.absent(),
     this.ownerUserId = const Value.absent(),
+    this.displayName = const Value.absent(),
     this.dateOfBirth = const Value.absent(),
     this.sex = const Value.absent(),
     this.heightCm = const Value.absent(),
@@ -953,6 +1000,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
   PersonalInfosCompanion.insert({
     this.id = const Value.absent(),
     required String ownerUserId,
+    this.displayName = const Value.absent(),
     this.dateOfBirth = const Value.absent(),
     this.sex = const Value.absent(),
     this.heightCm = const Value.absent(),
@@ -966,6 +1014,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
   static Insertable<PersonalInfoRow> custom({
     Expression<String>? id,
     Expression<String>? ownerUserId,
+    Expression<String>? displayName,
     Expression<DateTime>? dateOfBirth,
     Expression<String>? sex,
     Expression<int>? heightCm,
@@ -979,6 +1028,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (displayName != null) 'display_name': displayName,
       if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
       if (sex != null) 'sex': sex,
       if (heightCm != null) 'height_cm': heightCm,
@@ -995,6 +1045,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
   PersonalInfosCompanion copyWith({
     Value<String>? id,
     Value<String>? ownerUserId,
+    Value<String?>? displayName,
     Value<DateTime?>? dateOfBirth,
     Value<Sex?>? sex,
     Value<int?>? heightCm,
@@ -1008,6 +1059,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
     return PersonalInfosCompanion(
       id: id ?? this.id,
       ownerUserId: ownerUserId ?? this.ownerUserId,
+      displayName: displayName ?? this.displayName,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       sex: sex ?? this.sex,
       heightCm: heightCm ?? this.heightCm,
@@ -1029,6 +1081,9 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
     }
     if (ownerUserId.present) {
       map['owner_user_id'] = Variable<String>(ownerUserId.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
     }
     if (dateOfBirth.present) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth.value);
@@ -1069,6 +1124,7 @@ class PersonalInfosCompanion extends UpdateCompanion<PersonalInfoRow> {
     return (StringBuffer('PersonalInfosCompanion(')
           ..write('id: $id, ')
           ..write('ownerUserId: $ownerUserId, ')
+          ..write('displayName: $displayName, ')
           ..write('dateOfBirth: $dateOfBirth, ')
           ..write('sex: $sex, ')
           ..write('heightCm: $heightCm, ')
@@ -7354,6 +7410,7 @@ typedef $$PersonalInfosTableCreateCompanionBuilder =
     PersonalInfosCompanion Function({
       Value<String> id,
       required String ownerUserId,
+      Value<String?> displayName,
       Value<DateTime?> dateOfBirth,
       Value<Sex?> sex,
       Value<int?> heightCm,
@@ -7368,6 +7425,7 @@ typedef $$PersonalInfosTableUpdateCompanionBuilder =
     PersonalInfosCompanion Function({
       Value<String> id,
       Value<String> ownerUserId,
+      Value<String?> displayName,
       Value<DateTime?> dateOfBirth,
       Value<Sex?> sex,
       Value<int?> heightCm,
@@ -7395,6 +7453,11 @@ class $$PersonalInfosTableFilterComposer
 
   ColumnFilters<String> get ownerUserId => $composableBuilder(
     column: $table.ownerUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7459,6 +7522,11 @@ class $$PersonalInfosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get dateOfBirth => $composableBuilder(
     column: $table.dateOfBirth,
     builder: (column) => ColumnOrderings(column),
@@ -7514,6 +7582,11 @@ class $$PersonalInfosTableAnnotationComposer
 
   GeneratedColumn<String> get ownerUserId => $composableBuilder(
     column: $table.ownerUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => column,
   );
 
@@ -7583,6 +7656,7 @@ class $$PersonalInfosTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> ownerUserId = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
                 Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<Sex?> sex = const Value.absent(),
                 Value<int?> heightCm = const Value.absent(),
@@ -7595,6 +7669,7 @@ class $$PersonalInfosTableTableManager
               }) => PersonalInfosCompanion(
                 id: id,
                 ownerUserId: ownerUserId,
+                displayName: displayName,
                 dateOfBirth: dateOfBirth,
                 sex: sex,
                 heightCm: heightCm,
@@ -7609,6 +7684,7 @@ class $$PersonalInfosTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 required String ownerUserId,
+                Value<String?> displayName = const Value.absent(),
                 Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<Sex?> sex = const Value.absent(),
                 Value<int?> heightCm = const Value.absent(),
@@ -7621,6 +7697,7 @@ class $$PersonalInfosTableTableManager
               }) => PersonalInfosCompanion.insert(
                 id: id,
                 ownerUserId: ownerUserId,
+                displayName: displayName,
                 dateOfBirth: dateOfBirth,
                 sex: sex,
                 heightCm: heightCm,

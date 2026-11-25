@@ -8,4 +8,6 @@ abstract final class AppRoutes {
 
   static String clinicDetails(String clinicId) => '/chat/clinic/$clinicId';
   static const medicalCard = '/profile/medical-card';
+  static const personalInfo = '/profile/personal-info';
+  static const settings = '/profile/settings';
 }

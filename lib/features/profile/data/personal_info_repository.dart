@@ -22,6 +22,7 @@ class PersonalInfoRepository {
     final location = info.fallbackLocation;
     final row = PersonalInfosCompanion(
       ownerUserId: Value(_user.require()),
+      displayName: Value(info.displayName),
       dateOfBirth: Value(info.dateOfBirth),
       sex: Value(info.sex),
       heightCm: Value(info.heightCm),
@@ -52,6 +53,7 @@ class PersonalInfoRepository {
     final lat = row.fallbackLatitude;
     final lon = row.fallbackLongitude;
     return PersonalInfo(
+      displayName: row.displayName,
       dateOfBirth: row.dateOfBirth,
       sex: row.sex,
       heightCm: row.heightCm,
