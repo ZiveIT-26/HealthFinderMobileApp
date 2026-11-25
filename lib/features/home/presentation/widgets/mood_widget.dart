@@ -1,3 +1,4 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/theme/theme.dart';
@@ -87,17 +88,12 @@ class _MoodOption extends StatelessWidget {
         child: Column(
           spacing: AppSpacing.xxs,
           children: [
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 150),
-              opacity: isSelected ? 1 : 0.5,
-              child: Image.asset(
-                // Source files are 192 px (4x), shown at 48 so they stay sharp on dense screens.
-                isSelected ? mood.selectedAsset : mood.asset,
-                width: 48,
-                height: 48,
-                filterQuality: FilterQuality.medium,
-                gaplessPlayback: true,
-              ),
+            // SVGs from Figma (Components · Mood); the unselected ones are
+            // already at 50% opacity there.
+            SvgPicture.asset(
+              isSelected ? mood.selectedAsset : mood.asset,
+              width: 48,
+              height: 48,
             ),
             Text(mood.label, style: AppTextStyles.meta, maxLines: 1),
           ],

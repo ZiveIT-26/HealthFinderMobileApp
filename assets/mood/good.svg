@@ -1,0 +1,23 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="paint0_linear_675_745" x1="24.0184" y1="4.70288" x2="24.0184" y2="43.2972" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFE5A1"/>
+<stop offset="1" stop-color="#FFFAE1"/>
+</linearGradient>
+<clipPath id="clip0_675_745">
+<rect width="40" height="40" fill="white" transform="translate(4 4)"/>
+</clipPath>
+</defs>
+<g id="Mood">
+<g id="Mood / Gradient emotion/Organic/Good/Default" opacity="0.5">
+<g id="Gradient surface" clip-path="url(#clip0_675_745)">
+<path id="Vector" d="M24.0002 9.83339C29.8335 0.666728 43.1668 4.83339 43.1668 15.6667C44.0002 20.6667 39.8335 24.0001 37.3335 24.0001C47.3335 29.8334 44.0002 42.3334 33.1668 43.1667C28.1668 44.0001 24.8335 40.6667 24.0002 38.1667C19.0002 47.3334 4.83348 43.1667 4.83348 33.1667C4.00015 28.1667 8.16682 24.8334 10.6668 24.0001C1.50015 19.0001 4.83349 4.83339 14.8335 4.83339C19.8335 4.00006 23.1668 7.33339 24.0002 9.83339Z" fill="url(#paint0_linear_675_745)"/>
+</g>
+<g id="Face">
+<g id="Expression vectors">
+<path id="Vector_2" d="M16.5 21.4999C18.1667 19.2777 19.8333 19.2777 21.5 21.4999M26.5 21.4999C28.1667 19.2777 29.8333 19.2777 31.5 21.4999M19 28.1666C22.3333 31.4999 25.6667 31.4999 29 28.1666" stroke-width="1.83333" stroke-linecap="round" stroke="#19202F"/>
+</g>
+</g>
+</g>
+</g>
+</svg>
