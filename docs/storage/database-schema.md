@@ -1,0 +1,247 @@
+# Local database schema
+
+Working file: entities, relations and fields of the local database.
+Filled in step by step. Decisions and reasoning live in `local-database.md`.
+
+Status per entity: **in review**, **agreed**.
+
+## Entities and relations
+
+Medications, medication intakes, mood and the weather cache are not here yet.
+Medications and mood stay as a draft in `local-database.md`; all of them will
+be designed when they are implemented.
+
+```mermaid
+erDiagram
+    profile ||..o| personal_info : "1:1 by ownerUserId"
+    profile ||..o| medical_card : "1:1 by ownerUserId"
+    profile ||--o{ chats : "1:N"
+    medical_card ||--o{ chronic_conditions : "1:N"
+    medical_card ||--o{ allergies : "1:N"
+    medical_card ||--o{ implants : "1:N"
+    medical_card ||--o{ surgeries : "1:N"
+    medical_card ||--o{ emergency_contacts : "1:N"
+    chats ||--o{ messages : "1:N"
+    messages ||--o{ clinics : "1:N"
+```
+
+Solid line: foreign key. Dotted line: link by `ownerUserId` = `profile.serverId`,
+not a foreign key, because the profile is deleted on sign-out and the
+phone-owned data is kept.
+
+| Entity | Owner | Rows | On sign-out | Status |
+|---|---|---|---|---|
+| `profile` | Backend (`POST /auth/google`) | One | Cleared | agreed |
+| `personal_info` | Phone | One per account | Kept | agreed, open questions below |
+| `medical_card` | Phone | One per account | Kept | in review |
+| `chronic_conditions` | Phone | Many | Kept | in review |
+| `allergies` | Phone | Many | Kept | in review |
+| `implants` | Phone | Many | Kept | in review |
+| `surgeries` | Phone | Many | Kept | in review |
+| `emergency_contacts` | Phone | Many | Kept | in review |
+| `chats` | Backend | Many | Cleared | in review |
+| `messages` | Backend | Many | Cleared | in review |
+| `clinics` | Backend (inside message `payload`) | Many | Cleared | in review |
+
+## Conventions
+
+| Field | Where | Why |
+|---|---|---|
+| `id` (UUID) | Every table | No clashes between records created on different devices |
+| `updatedAt` | Every phone-owned table | Which version is newer |
+| `deletedAt` | Phone-owned tables with many rows | Soft delete, for a future backup |
+| `serverId` | Server-backed tables, when the server returns an id | Link to the backend record |
+| `syncedAt` / `fetchedAt` | Server-backed tables | When the copy was last refreshed |
+
+## Several accounts on one device
+
+Phone-owned data (`personal_info`, `medical_card` and its lists) is kept per
+account, by `ownerUserId`. The app shows only the data of the signed-in user;
+when nobody is signed in, it shows none. If another user signs in, both keep
+their data.
+
+All accounts share one database key, so the separation is done by the app's
+queries, not by encryption.
+
+---
+
+## profile
+
+Account data from the backend. Updated on every sign-in, there is no `GET /me` yet.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | Local id |
+| `serverId` | text | no | `user.id` from the backend |
+| `displayName` | text | yes | From Google. Show `email` when null |
+| `email` | text | no | From Google, verified |
+| `avatarUrl` | text | yes | Image itself is in the file cache |
+| `syncedAt` | datetime | no | Last sign-in |
+
+Not stored: first and last name separately, phone number (no feature uses them).
+
+## personal_info
+
+Data about the user that is not an account field and not a medical record.
+Entered by the user, local only. Shown at the top of the medical card.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `ownerUserId` | text, unique | no | `user.id` from the backend. Not a foreign key: `profile` is cleared on sign-out |
+| `dateOfBirth` | date | yes | |
+| `sex` | enum (female / male / other) | yes | Biological sex, for symptom assessment and medication checks |
+| `heightCm` | int | yes | |
+| `weightKg` | real | yes | |
+| `fallbackLocationLabel` | text | yes | Town or district picked from a list, e.g. "Košice-Sever" |
+| `fallbackLatitude` | real | yes | Sent as `location` in `POST /chat` when GPS is unavailable |
+| `fallbackLongitude` | real | yes | |
+| `updatedAt` | datetime | no | |
+
+Fallback location: used for doctor search (and weather, regional alerts) when
+location permission is denied or GPS is off. Picked from a list of towns and
+districts of the Košice region with known coordinates: no geocoding, no exact
+home address. The backend accepts only coordinates, so they are stored with
+the label.
+
+Open questions:
+- Height and weight: one current value, or history?
+
+## medical_card
+
+One card per account plus one table per list. List rows point to their card
+with `medicalCardId`, so deleting a card deletes its lists.
+
+All entries are self-reported and shown as "My records". The app stores and
+shows them, and may send them to the chat as context with `aiContextConsent`.
+It never assesses or scores them (EU MDR).
+
+Current medications are not stored here: the card will show them from
+`medications` (designed later, see `local-database.md`).
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `ownerUserId` | text, unique | no | `user.id` from the backend. Not a foreign key: `profile` is cleared on sign-out |
+| `bloodType` | enum (A+ / A- / B+ / B- / AB+ / AB- / O+ / O-) | yes | |
+| `insuranceCompany` | enum (vszp / dovera / union / other) | yes | Stored as a code, the UI shows the name. No insurance number: in Slovakia it is the birth number |
+| `insuranceCompanyOther` | text | yes | Only when `insuranceCompany = other`, e.g. a foreign insurer |
+| `gpName` | text | yes | General practitioner |
+| `gpPhone` | text | yes | |
+| `pregnancyDueDate` | date | yes | Hidden automatically after the date |
+| `needsStepFreeAccess` | bool | no | Wheelchair, stroller. Default for the barrier-free filter (Epic 4) |
+| `notes` | text | yes | Free text for anything else |
+| `updatedAt` | datetime | no | |
+
+### Common fields of the list tables
+
+`id` (UUID), `medicalCardId` (UUID → `medical_card`, cascade delete),
+`createdAt`, `updatedAt`, `deletedAt`.
+
+### chronic_conditions
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `name` | text | no | |
+| `since` | int (year) | yes | |
+| `note` | text | yes | |
+
+### allergies
+
+Allergies and intolerances in one list.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `name` | text | no | "Penicillin", "Lactose" |
+| `kind` | enum (allergy / intolerance) | no | An allergy can cause anaphylaxis, an intolerance cannot |
+| `category` | enum (medication / food / other) | no | Food and medication entries feed interaction checks (Epic 3) |
+| `reaction` | text | yes | |
+
+### implants
+
+Implants and medical devices: pacemaker, insulin pump, prostheses.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `name` | text | no | |
+| `note` | text | yes | |
+
+### surgeries
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `name` | text | no | Free text |
+| `year` | int | yes | |
+| `note` | text | yes | |
+
+### emergency_contacts
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `name` | text | no | |
+| `relation` | text | yes | "Mother" |
+| `phone` | text | no | |
+| `isPrimary` | bool | no | At most one primary per card: unique index on `medicalCardId` where `isPrimary` and not deleted |
+
+Postponed items are listed in `local-database.md` → "Postponed".
+
+## chats
+
+Source: `GET /chat/sessions` returns `{ id, title, createdAt }`, newest first.
+No `updatedAt`, so a changed chat is only noticed by loading its history.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `profileId` | UUID → `profile` | no | Cascade delete: deleting the profile on sign-out deletes the whole chat cache |
+| `serverId` | text, unique | no | `sessions[].id`, or `sessionId` from `POST /chat` |
+| `title` | text | yes | `sessions[].title`, SSE `title` event, `PATCH /chat/sessions/:id` |
+| `createdAt` | datetime | no | `sessions[].createdAt` |
+| `fetchedAt` | datetime | no | Last time the chat was in the server list |
+| `historyFetchedAt` | datetime | yes | Null: history never loaded, show a loader, not an empty chat |
+
+## messages
+
+Source: `GET /chat/history/:sessionId` returns `[{ role, content, payload }]`.
+No id and no date per message, so the history of a chat is replaced as a whole.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | |
+| `chatId` | UUID → `chats` | no | Cascade delete |
+| `position` | int | no | Index in the history array. Unique with `chatId` |
+| `role` | enum (user / assistant) | no | `role`. Rows with `system` are skipped |
+| `text` | text | no | `content` |
+
+## clinics
+
+Snapshot of `payload.doctors` of an assistant message. Not deduplicated: `url`
+is not unique (a Google Maps link shared by a building, or the register link),
+and the server never updates an old payload.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| `id` | UUID | no | Used by the clinic details route |
+| `messageId` | UUID → `messages` | no | Cascade delete |
+| `position` | int | no | Order in `doctors[]` |
+| `name` | text | no | |
+| `speciality` | text | no | |
+| `address` | text | no | |
+| `url` | text | no | |
+| `phone` | text | yes | |
+| `email` | text | yes | |
+| `additionalInfo` | text | yes | |
+
+### Cache flow
+
+1. Chat list: upsert by `serverId`; chats missing from the response are deleted
+   with their messages.
+2. Opening a chat: show the local copy, load the history, then in one
+   transaction delete the chat's messages and insert the new ones.
+3. Sending: a new `sessionId` creates a chat row. The reply is collected in
+   memory and written with its clinics when the stream ends. The `title` event
+   updates the title. A broken stream is fixed by the next history load.
+4. Sign-out: delete the `profile` row; chats, messages and clinics cascade.
+   Sign-in with another account replaces the `profile` row the same way.
+
+Ask the backend: `updatedAt` in `GET /chat/sessions`.

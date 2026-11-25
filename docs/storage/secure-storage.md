@@ -3,8 +3,6 @@
 Secrets of the mobile app. Code lives in
 `HealthFinderMobileApp/lib/core/storage/secure_store.dart`.
 
-Diagrams: [storage-schemas.drawio](storage-schemas.drawio), pages "Secure storage" and "Flows".
-
 - iOS: Keychain, accessible after the first unlock, this device only (no iCloud sync).
 - Android: values encrypted with a Keystore-protected key.
 

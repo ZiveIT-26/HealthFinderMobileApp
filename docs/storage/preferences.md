@@ -28,14 +28,14 @@ Diagrams: [storage-schemas.drawio](storage-schemas.drawio), page "Preferences".
 | `repeatReminderMinutes` | int? | `null` | Minutes before repeating a reminder if the intake isn't marked. `null` means no repeat |
 | `moodRemindersEnabled` | bool | `true` | Daily "How are you feeling today?" reminder. Scheduled locally |
 | `moodReminderTime` | string | `"20:00"` | Time of the mood reminder, `HH:mm` |
-| `healthAlertsEnabled` | bool | `true` | Alerts: viral outbreaks, adverse weather, etc. Sent by the server, so also stored on the backend |
-| `recommendationsEnabled` | bool | `false` | Tips and recommendations. Sent by the server, so also stored on the backend. Off by default to avoid feeling intrusive |
+| `healthAlertsEnabled` | bool | `true` | Alerts: viral outbreaks, adverse weather, etc. Sent by the server, so the backend will need it (see [Backend](#backend)) |
+| `recommendationsEnabled` | bool | `false` | Tips and recommendations. Sent by the server, so the backend will need it (see [Backend](#backend)). Off by default to avoid feeling intrusive |
 | **Privacy & Data** | | | |
-| `termsAcceptedVersion` | int? | `null` | Accepted version of the terms and privacy policy. `null` means not accepted yet. Also recorded on the backend |
-| `aiChatConsent` | bool | `false` | Consent to processing of data in the AI chat (on the server and by the LLM provider). Chat is unavailable without it. Also recorded on the backend |
+| `termsAcceptedVersion` | int? | `null` | Accepted version of the terms and privacy policy. `null` means not accepted yet |
+| `aiChatConsent` | bool | `false` | Consent to processing of data in the AI chat (on the server and by the LLM provider). Chat is unavailable without it |
 | `aiChatConsentAt` | string? (date) | `null` | When chat consent was given |
 | `aiChatConsentVersion` | int? | `null` | Version of the chat consent text. If outdated, ask again |
-| `aiContextConsent` | bool | `false` | Consent to sending the medical card and medications to the chat as context. Also recorded on the backend |
+| `aiContextConsent` | bool | `false` | Consent to sending the medical card and medications to the chat as context |
 | `aiContextConsentAt` | string? (date) | `null` | When context consent was given |
 | `aiContextConsentVersion` | int? | `null` | Version of the context consent text. If outdated, ask again |
 | `appLockEnabled` | bool | `false` | Require Face ID or fingerprint to open the app |
@@ -146,9 +146,13 @@ user agrees again.
 
 ### Backend
 
-The local values only tell the UI what to show. Consents, terms acceptance,
-`healthAlertsEnabled` and `recommendationsEnabled` must also be sent to the
-backend, since the server processes the data and sends those notifications.
+The backend does not store any of these values yet: it has no endpoint for
+consents or notification settings, so for now they exist only on the device.
+
+Once such endpoints exist, consents, terms acceptance, `healthAlertsEnabled`
+and `recommendationsEnabled` should be sent to the backend: the server
+processes the chat data, so it must be able to prove consent, and it sends
+those notifications.
 
 ## Adding a new setting
 
