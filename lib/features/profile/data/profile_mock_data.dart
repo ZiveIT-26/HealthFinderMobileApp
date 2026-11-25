@@ -4,7 +4,6 @@ library;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/router/app_routes.dart';
-import '../../../core/widgets/info_rows_card.dart';
 
 class SettingsItem {
   const SettingsItem({
@@ -29,17 +28,9 @@ class SettingsGroup {
   final List<SettingsItem> items;
 }
 
+/// Menu of the profile screen. The profile data itself comes from the
+/// repositories.
 abstract final class ProfileMockData {
-  static const name = 'Alex Morgan';
-  static const subtitle = 'Košice · alex@example.com';
-
-  static const details = [
-    InfoRow('Date of birth', '1987-06-15'),
-    InfoRow('Phone', '+421 900 000 000'),
-    InfoRow('Blood type', 'O+'),
-    InfoRow('Emergency contact', 'Taylor Morgan'),
-  ];
-
   static const groups = [
     SettingsGroup('My health', [
       SettingsItem(

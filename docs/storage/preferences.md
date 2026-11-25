@@ -1,14 +1,16 @@
 # Preferences (shared_preferences)
 
-Small, non-secret settings of the mobile app. Code lives in
-`HealthFinderMobileApp/lib/core/storage/`.
+Small, non-secret settings of the device, shared by every account on it.
+Code lives in `HealthFinderMobileApp/lib/core/storage/`.
 
-Diagrams: [storage-schemas.drawio](storage-schemas.drawio), page "Preferences".
+Only settings needed before sign-in or before the database can be opened live
+here. Per-account settings and consents are in the local database
+(`user_settings`, `consents`, see `database-schema.md`).
 
 - [Keys](#keys)
 - [Setup](#setup)
 - [Reading and writing](#reading-and-writing)
-- [Consents](#consents)
+- [Terms](#terms)
 - [Adding a new setting](#adding-a-new-setting)
 - [What does not belong here](#what-does-not-belong-here)
 
@@ -24,21 +26,13 @@ Diagrams: [storage-schemas.drawio](storage-schemas.drawio), page "Preferences".
 | `themeMode` | string? | `null` | Light or dark theme. `null` means follow the system |
 | **Notifications** | | | |
 | `notificationPermissionAsked` | bool | `false` | Whether the system notification prompt has been shown. It can only be shown once; after that, direct the user to system settings |
-| `medicationRemindersEnabled` | bool | `true` | Medication intake reminders. Scheduled locally |
-| `repeatReminderMinutes` | int? | `null` | Minutes before repeating a reminder if the intake isn't marked. `null` means no repeat |
-| `moodRemindersEnabled` | bool | `true` | Daily "How are you feeling today?" reminder. Scheduled locally |
-| `moodReminderTime` | string | `"20:00"` | Time of the mood reminder, `HH:mm` |
-| `healthAlertsEnabled` | bool | `true` | Alerts: viral outbreaks, adverse weather, etc. Sent by the server, so also stored on the backend |
-| `recommendationsEnabled` | bool | `false` | Tips and recommendations. Sent by the server, so also stored on the backend. Off by default to avoid feeling intrusive |
 | **Privacy & Data** | | | |
-| `termsAcceptedVersion` | int? | `null` | Accepted version of the terms and privacy policy. `null` means not accepted yet. Also recorded on the backend |
-| `aiChatConsent` | bool | `false` | Consent to processing of data in the AI chat (on the server and by the LLM provider). Chat is unavailable without it. Also recorded on the backend |
-| `aiChatConsentAt` | string? (date) | `null` | When chat consent was given |
-| `aiChatConsentVersion` | int? | `null` | Version of the chat consent text. If outdated, ask again |
-| `aiContextConsent` | bool | `false` | Consent to sending the medical card and medications to the chat as context. Also recorded on the backend |
-| `aiContextConsentAt` | string? (date) | `null` | When context consent was given |
-| `aiContextConsentVersion` | int? | `null` | Version of the context consent text. If outdated, ask again |
+| `termsAcceptedVersion` | int? | `null` | Accepted version of the terms and privacy policy on this device. `null` means not accepted yet. See [Terms](#terms) |
 | `appLockEnabled` | bool | `false` | Require Face ID or fingerprint to open the app |
+
+Moved to the local database, per account: medication and mood reminders,
+`repeatReminderMinutes`, `healthAlertsEnabled`, `recommendationsEnabled`
+(table `user_settings`), and the AI chat consents (table `consents`).
 
 ## Setup
 
@@ -49,6 +43,7 @@ Already wired in; nothing to do in screens.
 | `app_preferences.dart` | `AppPreferences`: typed getters and setters for every key. A `ChangeNotifier` |
 | `settings_scope.dart` | `SettingsScope`: provides `AppPreferences` to the widget tree |
 | `consent_versions.dart` | `ConsentVersions`: current versions of the terms and consent texts |
+| `consent.dart` | `ConsentType` and `Consent`: model of a row in the `consents` table. Storage comes with the database |
 | `app_storage.dart` | `AppStorage.init()`: creates preferences and secure storage at startup, handles first launch |
 
 `main.dart` loads all values once before `runApp` through `AppStorage`, and
@@ -77,9 +72,9 @@ Read a value in `build`:
 ```dart
 final settings = SettingsScope.of(context);
 
-Switch(
-  value: settings.moodRemindersEnabled,
-  onChanged: settings.setMoodRemindersEnabled,
+SwitchListTile(
+  value: settings.appLockEnabled,
+  onChanged: settings.setAppLockEnabled,
 );
 ```
 
@@ -100,8 +95,6 @@ Some keys are stored as strings but exposed as Flutter types:
 |---|---|---|
 | `locale` | `Locale?` | `null` = follow the system. `setLocale(null)` resets it |
 | `themeMode` | `ThemeMode` | `ThemeMode.system` is stored as no value |
-| `moodReminderTime` | `TimeOfDay` | Stored as `"HH:mm"` |
-| `repeatReminderMinutes` | `int?` | `setRepeatReminderMinutes(null)` turns repeating off |
 
 ### Outside widgets
 
@@ -109,48 +102,38 @@ Pass `AppPreferences` into controllers and services through the constructor,
 the same way `MoodController` receives its repository. Do not read it from a
 global.
 
-## Consents
+## Terms
 
-Each consent is stored as three keys (granted, date, version) and exposed as
-one `Consent` object. Always change consents through these methods, never key
-by key:
+The terms are accepted before sign-in, when the account is not known yet, so
+the acceptance is stored on the device:
 
 ```dart
-final settings = SettingsScope.read(context);
-
-await settings.grantAiChatConsent(ConsentVersions.aiChat);
-await settings.revokeAiChatConsent();
-
-await settings.grantAiContextConsent(ConsentVersions.aiContext);
-await settings.revokeAiContextConsent();
-
 await settings.setTermsAcceptedVersion(ConsentVersions.terms);
-```
-
-Check against the current version with the ready-made getters:
-
-```dart
 if (!settings.hasAcceptedCurrentTerms) { /* show terms */ }
-if (!settings.hasAiChatConsent) { /* show chat consent, block the chat */ }
-if (settings.hasAiContextConsent) { /* attach medical card to the request */ }
 ```
 
-The raw record is available as `settings.aiChatConsent` /
-`settings.aiContextConsent` (`granted`, `grantedAt`, `version`).
+After sign-in, a `terms` row is added to the `consents` table for the account.
+
+The AI chat consents (`aiChat`, `aiContext`) are per account and live only in
+the `consents` table. `ConsentVersions` and the `Consent` model are shared by
+both.
 
 ### Changing a consent text
 
 Bump the matching value in `ConsentVersions`. Stored consents for older
-versions stop being valid, and the `has...` getters return `false` until the
-user agrees again.
+versions stop being valid, and the user is asked again.
 
 ### Backend
 
-The local values only tell the UI what to show. Consents, terms acceptance,
-`healthAlertsEnabled` and `recommendationsEnabled` must also be sent to the
-backend, since the server processes the data and sends those notifications.
+The backend does not store terms acceptance, consents or notification settings
+yet: it has no endpoint for them. Once it does, they should be sent to it: the
+server processes the chat data, so it must be able to prove consent, and it
+sends health alerts and recommendations.
 
 ## Adding a new setting
+
+Only for device settings. A setting that belongs to the user goes to the
+`user_settings` table instead.
 
 1. Add the key to `_Keys` and to `_Keys.all` in `app_preferences.dart`.
    Keys missing from `all` throw at runtime.
@@ -175,6 +158,7 @@ device.
 | Data | Where instead |
 |---|---|
 | API token, refresh token, database key | Secure storage |
+| Per-account settings, consents | Local database (`user_settings`, `consents`) |
 | Profile, medical card, medications, mood, chats, clinics | Local database |
 | Per-medication reminder times | Local database (medication schedule) |
 | Anything large or a list of records | Local database |
