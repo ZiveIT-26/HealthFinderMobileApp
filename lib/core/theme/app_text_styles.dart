@@ -67,6 +67,12 @@ abstract final class AppTextStyles {
   /// Button label: "View Clinic" (12.6/16 Bold).
   static TextStyle get chatButton => _inter(12.6, 16, FontWeight.w700, AppColors.textOnAction);
 
+  /// Welcome hero greeting: "I’m your Health Assistant" (22/28 SemiBold).
+  static TextStyle get chatGreeting => _inter(22, 28, FontWeight.w600, AppColors.ink);
+
+  /// Welcome hero accent: "Hi!" (24/30 SemiBold).
+  static TextStyle get chatGreetingAccent => _inter(24, 30, FontWeight.w600, AppColors.ink);
+
   /// Footnote: "AI can make mistakes..." (11/17 Regular).
   static TextStyle get chatFootnote => _inter(11, 17, FontWeight.w400, AppColors.secondaryText);
 

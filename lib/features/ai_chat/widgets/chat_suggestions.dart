@@ -1,10 +1,11 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:health_finder/core/theme/app_colors.dart';
-import 'package:health_finder/core/theme/app_spacing.dart';
-import 'package:health_finder/core/theme/app_text_styles.dart';
 
+import '../../../core/theme/theme.dart';
+import 'home_scaled.dart';
 import 'suggestion_chip.dart';
 
+/// "Try asking" with suggestion chips (Figma: Chat · AI · Welcome).
+/// Scaled like the Home screen, see [HomeScaled].
 class ChatSuggestions extends StatelessWidget {
   const ChatSuggestions({super.key, required this.onSelected});
 
@@ -21,33 +22,23 @@ class ChatSuggestions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.l,
-        AppSpacing.l,
-        AppSpacing.l,
-        AppSpacing.l,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: AppSpacing.m,
-        children: [
-          Text(
-            'Try asking',
-            style: AppTextStyles.body.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
+      padding: const EdgeInsets.all(AppSpacing.l),
+      child: HomeScaled(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: AppSpacing.l,
+          children: [
+            Text('Try asking', style: AppTextStyles.title),
+            Wrap(
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
+              children: [
+                for (final s in _suggestions)
+                  SuggestionChip(label: s, onTap: () => onSelected(s)),
+              ],
             ),
-          ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final s in _suggestions)
-                SuggestionChip(label: s, onTap: () => onSelected(s)),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
