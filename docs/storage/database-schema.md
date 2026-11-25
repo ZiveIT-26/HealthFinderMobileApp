@@ -98,16 +98,16 @@ Entered by the user, local only. Shown at the top of the medical card.
 | `sex` | enum (female / male / other) | yes | Biological sex, for symptom assessment and medication checks |
 | `heightCm` | int | yes | |
 | `weightKg` | real | yes | |
-| `fallbackLocationLabel` | text | yes | Town or district picked from a list, e.g. "Košice-Sever" |
+| `fallbackLocationLabel` | text | yes | Display name of the home location, from reverse geocoding of the point, e.g. "Košice-Sever" |
 | `fallbackLatitude` | real | yes | Sent as `location` in `POST /chat` when GPS is unavailable |
 | `fallbackLongitude` | real | yes | |
 | `updatedAt` | datetime | no | |
 
-Fallback location: used for doctor search (and weather, regional alerts) when
-location permission is denied or GPS is off. Picked from a list of towns and
-districts of the Košice region with known coordinates: no geocoding, no exact
-home address. The backend accepts only coordinates, so they are stored with
-the label.
+Fallback location: the user's home, used for doctor search (and weather,
+regional alerts) when the current position is not available. Set in settings
+from the current GPS position or by picking a point on a map. The display
+name comes from reverse geocoding of the point (the platform geocoder, no
+API key).
 
 Height and weight hold one current value each, no history.
 

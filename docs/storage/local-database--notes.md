@@ -152,6 +152,12 @@ migration.
 
 - All chats are kept locally for now; a limit (last N) may come later.
 - Height and weight: one current value each, no history.
+- Sign-in: Google (`POST /auth/google`), also for the demo.
+- Location for doctor search: the current position when available, the
+  home location as fallback. The home location is set in settings in two
+  ways: from the current GPS position or by picking a point on a map. Its
+  display name comes from reverse geocoding of the point. Stored in the
+  existing `fallbackLocation*` fields of `personal_info`.
 
 ## Open questions
 

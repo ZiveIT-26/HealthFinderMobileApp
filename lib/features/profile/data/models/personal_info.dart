@@ -20,7 +20,7 @@ class PersonalInfo {
   final int? heightCm;
   final double? weightKg;
 
-  /// Used for doctor search when GPS is unavailable.
+  /// Home location, used for doctor search when GPS is unavailable.
   final FallbackLocation? fallbackLocation;
 
   PersonalInfo copyWith({
@@ -40,7 +40,9 @@ class PersonalInfo {
   }
 }
 
-/// A town or district of the Košice region, picked from a list.
+/// The user's home, used for doctor search when the current position is not
+/// available. Set from GPS or a point on a map; [label] is its display name
+/// from reverse geocoding.
 class FallbackLocation {
   const FallbackLocation({
     required this.label,
