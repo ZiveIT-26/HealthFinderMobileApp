@@ -29,6 +29,7 @@ here. Per-account settings and consents are in the local database
 | **Privacy & Data** | | | |
 | `termsAcceptedVersion` | int? | `null` | Accepted version of the terms and privacy policy on this device. `null` means not accepted yet. See [Terms](#terms) |
 | `appLockEnabled` | bool | `false` | Require Face ID or fingerprint to open the app |
+| `chatLocationRemember` | bool | `true` | Initial state of "Remember for this chat" on the assistant's location card. See [docs/location.md](../location.md) |
 
 Moved to the local database, per account: medication and mood reminders,
 `repeatReminderMinutes`, `healthAlertsEnabled`, `recommendationsEnabled`

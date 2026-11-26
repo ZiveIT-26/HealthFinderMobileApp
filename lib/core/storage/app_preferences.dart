@@ -92,6 +92,13 @@ class AppPreferences extends ChangeNotifier {
   Future<void> setAppLockEnabled(bool value) =>
       _setBool(_Keys.appLockEnabled, value);
 
+  /// Initial state of "Remember for this chat" on the assistant's location
+  /// card: on, the choice answers the next searches of the chat by itself.
+  bool get chatLocationRemember =>
+      _prefs.getBool(_Keys.chatLocationRemember) ?? true;
+  Future<void> setChatLocationRemember(bool value) =>
+      _setBool(_Keys.chatLocationRemember, value);
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -134,6 +141,7 @@ abstract final class _Keys {
   // Privacy & Data
   static const termsAcceptedVersion = 'termsAcceptedVersion';
   static const appLockEnabled = 'appLockEnabled';
+  static const chatLocationRemember = 'chatLocationRemember';
 
   static const all = <String>{
     firstLaunchDone,
@@ -144,5 +152,6 @@ abstract final class _Keys {
     notificationPermissionAsked,
     termsAcceptedVersion,
     appLockEnabled,
+    chatLocationRemember,
   };
 }
