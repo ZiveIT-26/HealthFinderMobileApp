@@ -46,6 +46,40 @@ class ChatApi {
     );
   }
 
+  /// POST /chat/location -> answers a [LocationRequestEvent] of a running
+  /// stream. Throws [LocationRequestExpired] when the server no longer waits.
+  Future<void> answerLocation(String requestId, LocationAnswer answer) async {
+    final body = switch (answer) {
+      LocationShared() => {
+          'requestId': requestId,
+          'source': answer.source.name,
+          'location': {
+            'lat': answer.latitude,
+            'lon': answer.longitude,
+            'label': ?answer.area,
+          },
+        },
+      LocationDeclined() => {'requestId': requestId, 'source': 'declined'},
+    };
+
+    final client = _newClient();
+    final http.Response res;
+    try {
+      res = await client.post(
+        Uri.parse('$baseUrl/chat/location'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+    } finally {
+      client.close();
+    }
+
+    if (res.statusCode == 404) throw const LocationRequestExpired();
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Location answer failed: ${res.statusCode} ${res.body}');
+    }
+  }
+
   /// GET /chat/stream/:id -> Server-Sent Events, turned into a Dart Stream
   Stream<ChatEvent> stream(String streamId) async* {
     final client = _newClient();
@@ -73,6 +107,12 @@ class ChatApi {
             yield HeartbeatEvent();
           case 'error':
             yield ErrorEvent(json['message'] ?? 'Unknown error');
+          case 'location_request':
+            yield LocationRequestEvent(
+              json['requestId'] as String,
+              json['reason'] as String?,
+              change: json['change'] == true,
+            );
           case 'doctors_list':
             yield DoctorsEvent(
               (json['doctors'] as List)

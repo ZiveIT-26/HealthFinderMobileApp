@@ -188,6 +188,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (v) => _setConsent(ConsentType.aiContext, v),
           ),
           SettingsSwitchTile(
+            title: 'Remember location in a chat',
+            subtitle: 'Where to search for doctors is asked once per chat. '
+                'Off: before every search',
+            value: preferences.chatLocationRemember,
+            onChanged: preferences.setChatLocationRemember,
+          ),
+          SettingsSwitchTile(
             title: 'App lock',
             subtitle: 'Face ID or fingerprint to open the app',
             value: preferences.appLockEnabled,

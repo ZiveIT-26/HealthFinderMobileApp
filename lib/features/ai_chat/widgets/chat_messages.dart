@@ -45,19 +45,38 @@ class AssistantReply extends StatelessWidget {
     required this.text,
     this.doctors = const [],
     this.isStreaming = false,
+    this.location,
+    this.locationTextOffset = 0,
+    this.awaitingLocation = false,
   });
 
   final String text;
   final List<Doctor> doctors;
   final bool isStreaming;
 
+  /// The assistant's location question (`LocationRequestCard`), if it asked.
+  final Widget? location;
+
+  /// Where [location] goes in [text]: the text written before the question
+  /// stays above the card, the rest of the answer comes below it.
+  final int locationTextOffset;
+
+  /// The question in [location] is still open: the reply waits for the user.
+  final bool awaitingLocation;
+
+  /// The backend streams plain text, so split on blank lines into paragraphs.
+  static Iterable<Widget> _paragraphs(String text) => text
+      .split(RegExp(r'\n\s*\n'))
+      .map((p) => p.trim())
+      .where((p) => p.isNotEmpty)
+      .map((p) => Text(p, style: AppTextStyles.chatBody));
+
   @override
   Widget build(BuildContext context) {
-    // The backend streams plain text, so split on blank lines into paragraphs.
-    final paragraphs = text
-        .split(RegExp(r'\n\s*\n'))
-        .map((p) => p.trim())
-        .where((p) => p.isNotEmpty);
+    final location = this.location;
+    final split = location == null
+        ? text.length
+        : locationTextOffset.clamp(0, text.length);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,9 +90,16 @@ class AssistantReply extends StatelessWidget {
           ],
         ),
         // Before the first token arrives
-        if (text.isEmpty && isStreaming) const _TypingIndicator(),
-        for (final paragraph in paragraphs)
-          Text(paragraph, style: AppTextStyles.chatBody),
+        if (text.isEmpty && isStreaming && location == null)
+          const _TypingIndicator(),
+        ..._paragraphs(text.substring(0, split)),
+        if (location != null) ...[
+          location,
+          // The search continues after the answer.
+          if (isStreaming && !awaitingLocation && split == text.length)
+            const _TypingIndicator(),
+          ..._paragraphs(text.substring(split)),
+        ],
         for (final doctor in doctors) DoctorCard(doctor: doctor),
         if (!isStreaming && text.isNotEmpty)
           Text(

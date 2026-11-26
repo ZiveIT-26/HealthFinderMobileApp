@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/clinics/presentation/screens/clinic_details_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/medical_card/presentation/screens/medical_card_screen.dart';
+import '../../features/profile/presentation/screens/home_location_screen.dart';
 import '../../features/profile/presentation/screens/personal_info_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
@@ -32,6 +33,11 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.login,
       builder: (context, state) => const LoginScreen(),
+    ),
+    // Above the tabs (no bottom navigation).
+    GoRoute(
+      path: AppRoutes.homeLocation,
+      builder: (context, state) => const HomeLocationScreen(),
     ),
     // Three tabs with bottom navigation. Each tab keeps its own state.
     StatefulShellRoute.indexedStack(

@@ -55,6 +55,12 @@ dependencies:
   path: ^1.9.0
   uuid: ^4.5.1
 
+  # Location for doctor search, see docs/location.md:
+  # permission + GPS, place names, map (OpenFreeMap tiles, no API key)
+  geolocator: ^14.1.2
+  geocoding: ^5.0.1
+  maplibre_gl: ^0.28.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

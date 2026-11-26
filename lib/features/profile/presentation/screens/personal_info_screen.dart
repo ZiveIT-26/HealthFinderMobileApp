@@ -1,16 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/data/repositories.dart';
 import '../../../../core/formatting/masking.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/app_dropdown.dart';
 import '../../../../core/widgets/date_field.dart';
 import '../../../../core/widgets/detail_page.dart';
 import '../../../../core/widgets/draft_form.dart';
 import '../../../../core/widgets/info_rows_card.dart';
 import '../../../../core/widgets/inline_text_field.dart';
+import '../../../../core/widgets/placeholder_text.dart';
 import '../../../../core/widgets/section_list.dart';
 import '../../data/models/personal_info.dart';
 import '../../data/models/profile.dart';
@@ -19,8 +23,8 @@ import '../../data/models/profile.dart';
 /// medical card: "Save" in the header writes all changes at once.
 ///
 /// The display name replaces the Google name in the app only. The email is
-/// the account's and shown masked. The home location is set from GPS or a
-/// map (not built yet), so it is only shown here.
+/// the account's and shown masked. The home location opens the map
+/// (`HomeLocationScreen`), which saves it by itself.
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
 
@@ -159,8 +163,24 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen>
           ),
         ),
       ),
-      InfoRow('Home location', info.fallbackLocation?.label),
+      InfoRow.control(
+        'Home location',
+        _HomeLocationValue(
+          label: info.fallbackLocation?.label,
+          onTap: _editHomeLocation,
+        ),
+      ),
     ]);
+  }
+
+  /// The map screen saves the home location by itself. Unsaved changes on
+  /// this page then get the new value too, so their "Save" keeps it.
+  Future<void> _editHomeLocation() async {
+    await context.push(AppRoutes.homeLocation);
+    if (!mounted) return;
+    final stored = await _repositories!.personalInfo.get();
+    if (!mounted || draft == null) return;
+    edit((i) => i.copyWith(fallbackLocation: stored.fallbackLocation));
   }
 
   /// "72,5" -> 72.5. Null for empty or a lone separator.
@@ -170,6 +190,39 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen>
   /// "72" instead of "72.0".
   static String _number(double value) =>
       value == value.roundToDouble() ? value.toInt().toString() : value.toString();
+}
+
+/// The home location's name, or "Set on map", with a chevron: opens the map.
+class _HomeLocationValue extends StatelessWidget {
+  const _HomeLocationValue({required this.label, required this.onTap});
+
+  final String? label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = this.label;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          Flexible(
+            child: label == null
+                ? const PlaceholderText('Set on map', textAlign: TextAlign.right)
+                : Text(
+                    label,
+                    style: AppTextStyles.detailRowValue,
+                    textAlign: TextAlign.right,
+                  ),
+          ),
+          const Icon(Icons.chevron_right, size: 20, color: AppColors.secondaryText),
+        ],
+      ),
+    );
+  }
 }
 
 extension on Sex {
