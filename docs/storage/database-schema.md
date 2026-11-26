@@ -88,12 +88,15 @@ Not stored: first and last name separately, phone number (no feature uses them).
 ## personal_info
 
 Data about the user that is not an account field and not a medical record.
-Entered by the user, local only. Shown at the top of the medical card.
+Entered by the user, local only. Shown and edited on the Personal
+Information screen; `sex` also decides whether the medical card shows the
+pregnancy due date.
 
 | Field | Type | Null | Notes |
 |---|---|---|---|
 | `id` | UUID | no | |
 | `ownerUserId` | text, unique | no | `user.id` from the backend. Not a foreign key: `profile` is cleared on sign-out |
+| `displayName` | text | yes | Name shown in the app instead of `profile.displayName` (Google). Local only, never sent to the backend. Null: use the Google name |
 | `dateOfBirth` | date | yes | |
 | `sex` | enum (female / male / other) | yes | Biological sex, for symptom assessment and medication checks |
 | `heightCm` | int | yes | |

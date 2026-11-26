@@ -56,6 +56,9 @@ class PersonalInfos extends Table {
   /// `user.id` from the backend. Not a foreign key: the profile is deleted
   /// on sign-out, this data is kept.
   TextColumn get ownerUserId => text().unique()();
+
+  /// Name shown in the app instead of the Google name. Local only.
+  TextColumn get displayName => text().nullable()();
   DateTimeColumn get dateOfBirth => dateTime().nullable()();
   TextColumn get sex => textEnum<Sex>().nullable()();
   IntColumn get heightCm => integer().nullable()();

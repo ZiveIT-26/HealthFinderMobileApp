@@ -45,6 +45,11 @@ abstract final class ProfileMockData {
         subtitle: 'Schedules and reminders',
       ),
       SettingsItem(
+        icon: Icons.sentiment_satisfied_outlined,
+        title: 'Mood Diary',
+        subtitle: 'Mood history and notes',
+      ),
+      SettingsItem(
         icon: Icons.description_outlined,
         title: 'Prevention & Tips',
         subtitle: 'Articles and practical health advice',
@@ -54,22 +59,14 @@ abstract final class ProfileMockData {
       SettingsItem(
         icon: Icons.person_outline,
         title: 'Personal Information',
-        subtitle: 'Name and date of birth',
+        subtitle: 'Name, date of birth, height, weight, location',
+        route: AppRoutes.personalInfo,
       ),
       SettingsItem(
-        icon: Icons.notifications_none,
-        title: 'Notifications',
-        subtitle: 'Medication reminder preferences',
-      ),
-      SettingsItem(
-        icon: Icons.info_outline,
-        title: 'Privacy & Data',
-        subtitle: 'Privacy and saved information',
-      ),
-      SettingsItem(
-        icon: Icons.description_outlined,
-        title: 'Help & Support',
-        subtitle: 'About HealthFinder',
+        icon: Icons.settings_outlined,
+        title: 'Settings',
+        subtitle: 'Notifications, privacy, language, help',
+        route: AppRoutes.settings,
       ),
     ]),
   ];

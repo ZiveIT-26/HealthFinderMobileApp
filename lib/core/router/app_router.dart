@@ -7,7 +7,9 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/clinics/presentation/screens/clinic_details_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/medical_card/presentation/screens/medical_card_screen.dart';
+import '../../features/profile/presentation/screens/personal_info_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/settings_screen.dart';
 import 'app_routes.dart';
 import 'app_shell.dart';
 
@@ -71,6 +73,16 @@ final appRouter = GoRouter(
                   path: 'medical-card',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const MedicalCardScreen(),
+                ),
+                GoRoute(
+                  path: 'personal-info',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const PersonalInfoScreen(),
+                ),
+                GoRoute(
+                  path: 'settings',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const SettingsScreen(),
                 ),
               ],
             ),
