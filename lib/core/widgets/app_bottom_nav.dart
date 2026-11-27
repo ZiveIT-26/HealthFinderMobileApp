@@ -67,7 +67,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.field);
     return Material(
-      color: isActive ? AppColors.colorSoft : Colors.transparent,
+      color: isActive ? AppColors.purpleSoft : Colors.transparent,
       borderRadius: radius,
       child: InkWell(
         borderRadius: radius,

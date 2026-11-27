@@ -5,7 +5,7 @@ import '../../../core/theme/theme.dart';
 import 'chat_header.dart';
 import 'doctor_card.dart';
 
-/// User message: teal bubble aligned to the right.
+/// User message: light purple bubble aligned to the right.
 class UserBubble extends StatelessWidget {
   const UserBubble({super.key, required this.text});
 
@@ -20,7 +20,7 @@ class UserBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card, vertical: AppSpacing.m),
           decoration: const BoxDecoration(
-            gradient: AppGradients.chatUserBubble,
+            color: AppColors.purpleSoft,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(17),
               topRight: Radius.circular(17),

@@ -27,8 +27,8 @@ Contents:
 | Personal info | **Phone** | Only copy, per account | Kept |
 | Medical card and its lists | **Phone** | Only copy, per account | Kept |
 | User settings, consents | **Phone** | Only copy, per account | Kept |
-| Chats, messages | Backend | Full copy for offline reading | Deleted |
-| Clinics found in chats | Backend (message payload) | Full copy for offline reading | Deleted |
+| Chats, messages | Backend | Cached for offline reading after a chat is opened or started on this device | Deleted |
+| Clinics found in chats | Backend (message payload) | Cached with the corresponding messages | Deleted |
 
 Not stored here: tokens and the database key (secure storage), device
 settings such as language, theme and app lock (preferences), images (file
@@ -105,7 +105,7 @@ final repositories = RepositoriesScope.of(context);
 | `medicalCard` | `get()`, `watch()`: the card with all lists (`MedicalCardData`) | `saveCard(MedicalCard)`; per list `saveAllergy(item)`, `deleteAllergy(id)`, same for conditions, implants, surgeries, contacts |
 | `userSettings` | `get()`, `watch()` | `save(UserSettings)` |
 | `consents` | `isValid(type)`, `watchValid(type)`, `latest(type)` | `grant(type)`, `revoke(type)` |
-| `chatCache` | `watchChats()`, `watchMessages(chatId)`, `clinic(id)` | `saveChatList`, `replaceHistory`, `startChat`, `appendMessage`, `setTitle` |
+| `chatCache` | `watchChats()`, `watchMessages(chatId)`, `loadSessions()`, `loadHistory(sessionId)`, `clinic(id)` | `saveChatList`, `replaceHistory`, `startChat`, `appendMessage`, `setTitle` |
 | `account` | | `signIn`, `signOut`, `deleteMyData` |
 
 Per-account repositories throw `NotSignedInException` when nobody is signed
@@ -195,8 +195,9 @@ the first release, every change needs a migration step and a higher
 
 ## Rules
 
-- Screens read from the database, never directly from the API. Network code
-  writes into the repositories.
+- Widgets do not query the database or call APIs directly. Feature controllers
+  coordinate network requests and repository reads/writes; server-backed data
+  is cached for offline use where supported.
 - Phone-owned tables are always filtered by the signed-in user inside the
   repository.
 - Enums are stored by name (`textEnum`), dates as ISO-8601 text
@@ -211,6 +212,7 @@ the first release, every change needs a migration step and a higher
 | `databaseKey()` throws | Temporary (iOS before the first unlock after a reboot). The database is never recreated because of it. At startup the app continues as signed out |
 | The file exists, the key cannot open it | The file can never be read again (restored from a backup, or the key was lost). It is deleted, and the app starts with an empty database |
 | "Delete my data" | `AccountService.deleteMyData()`, see [Accounts](#accounts) |
+| Chat API unavailable | The history sidebar and previously opened chats use the local cache. Chats not opened online yet have no cached messages. Sending stays disabled until the backend is available; prompts are not queued offline. |
 
 | Platform | Note |
 |---|---|

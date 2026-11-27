@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:go_router/go_router.dart';
+import 'package:health_finder/features/ai_chat/widgets/chat_history_panel.dart';
 import 'package:health_finder/features/ai_chat/widgets/chat_suggestions.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -19,10 +20,9 @@ import '../../../core/theme/theme.dart';
 import '../../profile/data/models/personal_info.dart';
 import '../../profile/presentation/widgets/settings_controls.dart';
 import '../widgets/chat_composer.dart';
+import '../widgets/chat_conversation.dart';
 import '../widgets/chat_header.dart';
-import '../widgets/chat_messages.dart';
 import '../widgets/chat_welcome.dart';
-import '../widgets/location_request_card.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -36,7 +36,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
   static const _moveCurve = Curves.easeInOutCubic;
 
   late final ChatController _chat;
-  final _scroll = ScrollController();
+  bool _chatInitialized = false;
+  Timer? _availabilityTimer;
   final _backendUrl = dotenv.get("BACKEND_URL");
 
   /// Text field of the composer. The screen owns it so that voice input can
@@ -61,21 +62,24 @@ class _AiChatScreenState extends State<AiChatScreen> {
   StreamSubscription<PersonalInfo>? _homeSub;
 
   @override
-  void initState() {
-    super.initState();
-    _chat = ChatController(
-      ChatApi(_backendUrl, clientFactory: authController.createClient),
-    );
-    _chat.addListener(_scrollToBottom);
-    _chat.answerRemembered = _answerRemembered;
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final repositories = RepositoriesScope.of(context);
+    if (!_chatInitialized) {
+      _chat = ChatController(
+        ChatApi(_backendUrl, clientFactory: authController.createClient),
+        cacheStore: repositories.chatCache,
+      );
+      _chat.answerRemembered = _answerRemembered;
+      _chatInitialized = true;
+      unawaited(_chat.checkAvailability());
+      _availabilityTimer = Timer.periodic(
+        const Duration(seconds: 20),
+        (_) => unawaited(_chat.checkAvailability()),
+      );
+    }
     // Settings → Privacy: the initial state of "Remember for this chat".
     _chat.rememberByDefault = SettingsScope.of(context).chatLocationRemember;
-    final repositories = RepositoriesScope.of(context);
     if (_homeSub == null && repositories.currentUser.isSignedIn) {
       _homeSub = repositories.personalInfo.watch().listen(
             (info) => setState(() => _home = info.fallbackLocation),
@@ -86,23 +90,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   void dispose() {
     _homeSub?.cancel();
-    _chat.removeListener(_scrollToBottom);
-    _chat.dispose();
+    _availabilityTimer?.cancel();
+    if (_chatInitialized) _chat.dispose();
     _voice.dispose(); // new
     _text.dispose(); // new
-    _scroll.dispose();
     super.dispose();
   }
 
-  /// Runs on every notifyListeners(), so the view follows streaming tokens.
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
-    });
-  }
-
   void _send(String text) {
+    if (!_chat.backendAvailable) {
+      _showChatError('Chat is unavailable');
+      return;
+    }
     // A suggestion chip can be tapped while recording.
     if (_voice.isListening) _voice.stop(); // new
     _chat.send(text);
@@ -111,6 +110,103 @@ class _AiChatScreenState extends State<AiChatScreen> {
   void _newChat() {
     if (_voice.isListening) _voice.stop(); // new
     _chat.clear();
+  }
+
+  Future<void> _openHistory() async {
+    await _chat.loadSessions();
+    if (!mounted) return;
+    if (_chat.sessionsError != null) {
+      _showChatError('Could not load chat history');
+      return;
+    }
+
+    await showChatHistory(
+      context,
+      items: _chat.sessions
+          .map(
+            (session) => ChatHistoryItem(
+              id: session.id,
+              title: session.title,
+              subtitle: _chat.sessionsFromCache ? 'Saved on this device' : '',
+              updatedAt: session.createdAt,
+            ),
+          )
+          .toList(),
+      onNewChat: _newChat,
+      onOpen: (item) => unawaited(_openSavedChat(item)),
+      onDelete: _deleteSavedChat,
+      onRename: _renameSavedChat,
+    );
+  }
+
+  Future<void> _openSavedChat(ChatHistoryItem item) async {
+    try {
+      await _chat.openSession(item.id);
+    } catch (error) {
+      debugPrint('Could not open chat history: $error');
+      if (!mounted) return;
+      if (error is ChatHistoryNotCachedException) {
+        _showChatError('Open this chat while online to save it for offline use');
+      } else {
+        _showChatError('Could not open this chat');
+      }
+    }
+  }
+
+  Future<bool> _deleteSavedChat(ChatHistoryItem item) async {
+    try {
+      await _chat.deleteSession(item.id);
+      return true;
+    } catch (error) {
+      debugPrint('Could not delete chat history: $error');
+      if (mounted) _showChatError('Could not delete this chat');
+      return false;
+    }
+  }
+
+  Future<String?> _renameSavedChat(ChatHistoryItem item) async {
+    var editedTitle = item.title;
+    final title = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename chat'),
+        content: TextFormField(
+          initialValue: item.title,
+          onChanged: (value) => editedTitle = value,
+          autofocus: true,
+          maxLength: 100,
+          decoration: const InputDecoration(labelText: 'Chat name'),
+          onFieldSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, editedTitle),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (title == null || title.trim().isEmpty || !mounted) return null;
+
+    try {
+      final updatedTitle = title.trim();
+      await _chat.renameSession(item.id, updatedTitle);
+      return updatedTitle;
+    } catch (error) {
+      debugPrint('Could not rename chat history: $error');
+      if (mounted) _showChatError('Could not rename this chat');
+      return null;
+    }
+  }
+
+  void _showChatError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$message. Check your connection and try again.')),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -311,7 +407,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 final location = _locationSubtitle();
                 return ChatHeader(
                   onNewChat: _chat.messages.isEmpty || _chat.loading ? null : _newChat,
-                  onHistory: () {}, // TODO: open chats history
+                  onHistory: _openHistory,
                   location: location,
                   onLocationTap:
                       location == null ? null : _changeRememberedLocation,
@@ -330,7 +426,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         ? _buildWelcome()
                         : KeyedSubtree(
                             key: const ValueKey('messages'),
-                            child: _buildMessageList(),
+                            child: ChatConversation(
+                              messages: _chat.messages,
+                              sessionId: _chat.currentSessionId,
+                              isLoading: _chat.loading,
+                              homeLabel: _home?.label,
+                              onCurrentLocation: (request) =>
+                                  unawaited(_shareCurrentLocation(request)),
+                              onHomeLocation: (request) {
+                                final home = _home;
+                                if (home == null) return;
+                                if (_chat.beginLocationAnswer(request)) {
+                                  unawaited(_shareHome(request, home));
+                                }
+                              },
+                              onSetHome: (request) =>
+                                  unawaited(_setHomeAndShare(request)),
+                              onDeclineLocation: (request) =>
+                                  unawaited(_declineLocation(request)),
+                              onRememberChanged: _chat.setRemember,
+                            ),
                           ),
                   );
                 },
@@ -339,12 +454,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
             // Pinned to the bottom. Rebuilds on chat state and on voice state.
             ListenableBuilder(
               listenable: Listenable.merge([_chat, _voice]),
-              builder: (context, _) => ChatComposer(
-                controller: _text,
-                enabled: !_chat.loading,
-                onSend: _send,
-                onVoiceTap: _onVoiceTap,
-                isListening: _voice.isListening,
+              builder: (context, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_chat.cacheError != null) _buildCacheNotice(),
+                  if (!_chat.backendAvailable) _buildConnectionNotice(),
+                  ChatComposer(
+                    controller: _text,
+                    enabled: !_chat.loading && _chat.backendAvailable,
+                    onSend: _send,
+                    onVoiceTap: _onVoiceTap,
+                    isListening: _voice.isListening,
+                  ),
+                ],
               ),
             ),
           ],
@@ -365,54 +487,65 @@ class _AiChatScreenState extends State<AiChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const ChatGreeting(),
-            ChatSuggestions(onSelected: _send),
+            AbsorbPointer(
+              absorbing: !_chat.backendAvailable,
+              child: Opacity(
+                opacity: _chat.backendAvailable ? 1 : 0.5,
+                child: ChatSuggestions(onSelected: _send),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMessageList() {
-    final messages = _chat.messages;
-
-    return ListView.separated(
-      controller: _scroll,
-      padding: const EdgeInsets.fromLTRB(17, 28, 17, AppSpacing.l),
-      itemCount: messages.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 20),
-      itemBuilder: (context, index) {
-        final m = messages[index];
-        final isLast = index == messages.length - 1;
-        final request = m.locationRequest;
-
-        return m.isUser
-            ? UserBubble(text: m.text)
-            : AssistantReply(
-                text: m.text,
-                doctors: m.doctors,
-                isStreaming: _chat.loading && isLast,
-                locationTextOffset: request?.textOffset ?? 0,
-                awaitingLocation: request?.isOpen ?? false,
-                location: request == null
-                    ? null
-                    : LocationRequestCard(
-                        request: request,
-                        homeLabel: _home?.label,
-                        onCurrent: () => _shareCurrentLocation(request),
-                        onHome: () {
-                          final home = _home;
-                          if (home == null) return;
-                          if (_chat.beginLocationAnswer(request)) {
-                            _shareHome(request, home);
-                          }
-                        },
-                        onSetHome: () => _setHomeAndShare(request),
-                        onDecline: () => _declineLocation(request),
-                        onRememberChanged: (value) =>
-                            _chat.setRemember(request, value),
-                      ),
-              );
-      },
+  Widget _buildConnectionNotice() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.l,
+        AppSpacing.s,
+        AppSpacing.l,
+        0,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined, color: AppColors.secondaryText),
+          const SizedBox(width: AppSpacing.s),
+          const Expanded(
+            child: Text(
+              'Offline. Sending is disabled; cached chats can still be opened.',
+            ),
+          ),
+          IconButton(
+            tooltip: 'Retry connection',
+            onPressed: () => unawaited(_chat.checkAvailability()),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
     );
   }
-}
+
+  Widget _buildCacheNotice() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.l,
+        AppSpacing.s,
+        AppSpacing.l,
+        0,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_outlined, color: AppColors.secondaryText),
+          SizedBox(width: AppSpacing.s),
+          Expanded(
+            child: Text(
+              'Could not save this chat on the device. It may not be available offline.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

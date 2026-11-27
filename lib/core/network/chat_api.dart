@@ -1,12 +1,14 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import 'chat_models.dart';
 
 class ChatApi {
   /// [clientFactory] creates the HTTP client for each call; pass
   /// `authController.createClient` to send the user's token.
   ChatApi(this.baseUrl, {http.Client Function()? clientFactory})
-      : _newClient = clientFactory ?? http.Client.new;
+    : _newClient = clientFactory ?? http.Client.new;
 
   final String baseUrl;
   final http.Client Function() _newClient;
@@ -51,14 +53,14 @@ class ChatApi {
   Future<void> answerLocation(String requestId, LocationAnswer answer) async {
     final body = switch (answer) {
       LocationShared() => {
-          'requestId': requestId,
-          'source': answer.source.name,
-          'location': {
-            'lat': answer.latitude,
-            'lon': answer.longitude,
-            'label': ?answer.area,
-          },
+        'requestId': requestId,
+        'source': answer.source.name,
+        'location': {
+          'lat': answer.latitude,
+          'lon': answer.longitude,
+          'label': ?answer.area,
         },
+      },
       LocationDeclined() => {'requestId': requestId, 'source': 'declined'},
     };
 
@@ -84,9 +86,10 @@ class ChatApi {
   Stream<ChatEvent> stream(String streamId) async* {
     final client = _newClient();
     try {
-      final req = http.Request('GET', Uri.parse('$baseUrl/chat/stream/$streamId'))
-        ..headers['Accept'] = 'text/event-stream'
-        ..headers['Cache-Control'] = 'no-cache';
+      final req =
+          http.Request('GET', Uri.parse('$baseUrl/chat/stream/$streamId'))
+            ..headers['Accept'] = 'text/event-stream'
+            ..headers['Cache-Control'] = 'no-cache';
 
       final res = await client.send(req);
       if (res.statusCode != 200) {
@@ -100,7 +103,8 @@ class ChatApi {
 
       await for (final line in lines) {
         if (!line.startsWith('data:')) continue; // skip empty separator lines
-        final json = jsonDecode(line.substring(5).trim()) as Map<String, dynamic>;
+        final json =
+            jsonDecode(line.substring(5).trim()) as Map<String, dynamic>;
 
         switch (json['type']) {
           case 'heartbeat':
@@ -125,6 +129,76 @@ class ChatApi {
       }
     } finally {
       client.close(); // closes the connection when done or cancelled
+    }
+  }
+
+  /// GET /chat/sessions -> newest first
+  Future<List<ChatSession>> fetchSessions() async {
+    final res = await _send((c) => c.get(Uri.parse('$baseUrl/chat/sessions')));
+    final list = jsonDecode(res.body) as List;
+    return list
+        .map((e) => ChatSession.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Checks the authenticated, database-backed chat endpoint.
+  Future<void> checkAvailability() async {
+    final client = _newClient();
+    try {
+      final res = await client
+          .get(Uri.parse('$baseUrl/chat/sessions'))
+          .timeout(const Duration(seconds: 5));
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw Exception(
+          'Chat availability check failed: ${res.statusCode} ${res.body}',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  /// GET /chat/history/:sessionId -> chronological
+  Future<List<HistoryMessage>> fetchHistory(String sessionId) async {
+    final res = await _send(
+      (c) => c.get(Uri.parse('$baseUrl/chat/history/$sessionId')),
+    );
+    final list = jsonDecode(res.body) as List;
+    return list
+        .map((e) => HistoryMessage.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// PATCH /chat/sessions/:id
+  Future<void> renameSession(String sessionId, String title) => _send(
+    (c) => c.patch(
+      Uri.parse('$baseUrl/chat/sessions/$sessionId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'title': title}),
+    ),
+  );
+
+  /// DELETE /chat/sessions/:id
+  Future<void> deleteSession(String sessionId) =>
+      _send((c) => c.delete(Uri.parse('$baseUrl/chat/sessions/$sessionId')));
+
+  /// DELETE /chat/sessions (all sessions of the user)
+  Future<void> deleteAllSessions() =>
+      _send((c) => c.delete(Uri.parse('$baseUrl/chat/sessions')));
+
+  /// Runs one request with a fresh client; throws on non-2xx.
+  Future<http.Response> _send(
+    Future<http.Response> Function(http.Client c) call,
+  ) async {
+    final client = _newClient();
+    try {
+      final res = await call(client).timeout(const Duration(seconds: 5));
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw Exception('Request failed: ${res.statusCode} ${res.body}');
+      }
+      return res;
+    } finally {
+      client.close();
     }
   }
 }

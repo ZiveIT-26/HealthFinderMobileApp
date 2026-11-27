@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/network/chat_cache_store.dart';
+import '../../../core/network/chat_models.dart' as network;
 import '../../../core/session/current_user.dart';
 import 'models/chat_cache.dart';
 
@@ -12,7 +14,7 @@ typedef ServerChat = ({String sessionId, String? title, DateTime createdAt});
 /// Screens read from here; network code writes the results of
 /// `GET /chat/sessions`, `GET /chat/history/:id` and the chat stream into it.
 /// The cache belongs to the profile row and is deleted with it on sign-out.
-class ChatCacheRepository {
+class ChatCacheRepository implements ChatCacheStore {
   ChatCacheRepository(this._db);
 
   final AppDatabase _db;
@@ -28,11 +30,34 @@ class ChatCacheRepository {
     return query.watch().map((rows) => rows.map(_toChat).toList());
   }
 
+  @override
+  Future<List<network.ChatSession>> loadSessions() async {
+    final chats = await watchChats().first;
+    return chats
+        .where((chat) => chat.historyLoaded)
+        .map(
+          (chat) => network.ChatSession(
+            id: chat.sessionId,
+            title: chat.title ?? 'New chat',
+            createdAt: chat.createdAt,
+          ),
+        )
+        .toList();
+  }
+
   Future<Chat?> chatBySession(String sessionId) async {
     final row = await (_db.select(_db.chats)
           ..where((t) => t.serverId.equals(sessionId)))
         .getSingleOrNull();
     return row == null ? null : _toChat(row);
+  }
+
+  @override
+  Future<List<network.HistoryMessage>?> loadHistory(String sessionId) async {
+    final chat = await chatBySession(sessionId);
+    if (chat == null || !chat.historyLoaded) return null;
+    final messages = await _loadMessages(chat.id);
+    return messages.map(_toNetworkMessage).toList();
   }
 
   /// Messages of a chat in order, with their clinics. Emits again after every
@@ -89,40 +114,43 @@ class ChatCacheRepository {
     });
   }
 
+  @override
+  Future<void> saveSessions(List<network.ChatSession> chats) =>
+      saveChatList([
+        for (final chat in chats)
+          (
+            sessionId: chat.id,
+            title: chat.title,
+            createdAt: chat.createdAt,
+          ),
+      ]);
+
   /// Stores the result of `GET /chat/history/:sessionId`. The backend gives
   /// no ids, so the chat's messages are replaced as a whole.
   Future<void> replaceHistory(String sessionId, List<ChatMessage> messages) {
     return _db.transaction(() async {
       final chatId = await _requireChatId(sessionId);
-      await (_db.delete(_db.messages)..where((t) => t.chatId.equals(chatId)))
-          .go();
-      for (var i = 0; i < messages.length; i++) {
-        await _insertMessage(chatId, i, messages[i]);
-      }
-      await (_db.update(_db.chats)..where((t) => t.id.equals(chatId)))
-          .write(ChatsCompanion(historyFetchedAt: Value(DateTime.now())));
+      await _replaceHistory(chatId, messages);
     });
   }
 
+  @override
+  Future<void> saveHistory(
+    String sessionId,
+    List<network.HistoryMessage> messages,
+  ) =>
+      _db.transaction(() async {
+        final chatId = await _ensureChat(sessionId, historyLoaded: true);
+        await _replaceHistory(
+          chatId,
+          messages.map(_toCachedMessage).toList(),
+        );
+      });
+
   /// A new chat started on this device (`POST /chat` returned a new
   /// `sessionId`). Returns the local chat id; an existing chat is kept.
-  Future<String> startChat(String sessionId) {
-    return _db.transaction(() async {
-      final now = DateTime.now();
-      await _db.into(_db.chats).insert(
-            ChatsCompanion.insert(
-              profileId: await _profileId(),
-              serverId: sessionId,
-              createdAt: now,
-              fetchedAt: now,
-              // Nothing to load: the chat is new.
-              historyFetchedAt: Value(now),
-            ),
-            mode: InsertMode.insertOrIgnore,
-          );
-      return _requireChatId(sessionId);
-    });
-  }
+  Future<String> startChat(String sessionId) =>
+      _db.transaction(() => _ensureChat(sessionId, historyLoaded: true));
 
   /// Adds the user's prompt, or the assistant's reply once its stream has
   /// ended, at the end of the chat. A broken stream is fixed by the next
@@ -130,15 +158,23 @@ class ChatCacheRepository {
   Future<void> appendMessage(String sessionId, ChatMessage message) {
     return _db.transaction(() async {
       final chatId = await _requireChatId(sessionId);
-      final maxPosition = _db.messages.position.max();
-      final last = await (_db.selectOnly(_db.messages)
-            ..addColumns([maxPosition])
-            ..where(_db.messages.chatId.equals(chatId)))
-          .map((row) => row.read(maxPosition))
-          .getSingle();
-      await _insertMessage(chatId, (last ?? -1) + 1, message);
+      await _appendMessage(chatId, message);
     });
   }
+
+  @override
+  Future<void> appendHistoryMessage(
+    String sessionId,
+    network.HistoryMessage message,
+    {required bool isNewSession}
+  ) =>
+      _db.transaction(() async {
+        final chatId = await _ensureChat(
+          sessionId,
+          historyLoaded: isNewSession,
+        );
+        await _appendMessage(chatId, _toCachedMessage(message));
+      });
 
   /// From the SSE `title` event or after `PATCH /chat/sessions/:id`.
   Future<void> setTitle(String sessionId, String title) {
@@ -162,6 +198,47 @@ class ChatCacheRepository {
         .getSingleOrNull();
     if (row == null) throw StateError('Chat $sessionId is not cached');
     return row.id;
+  }
+
+  Future<String> _ensureChat(
+    String sessionId, {
+    required bool historyLoaded,
+  }) async {
+    final now = DateTime.now();
+    await _db.into(_db.chats).insert(
+          ChatsCompanion.insert(
+            profileId: await _profileId(),
+            serverId: sessionId,
+            createdAt: now,
+            fetchedAt: now,
+            historyFetchedAt: historyLoaded ? Value(now) : const Value(null),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+    return _requireChatId(sessionId);
+  }
+
+  Future<void> _replaceHistory(
+    String chatId,
+    List<ChatMessage> messages,
+  ) async {
+    await (_db.delete(_db.messages)..where((t) => t.chatId.equals(chatId)))
+        .go();
+    for (var i = 0; i < messages.length; i++) {
+      await _insertMessage(chatId, i, messages[i]);
+    }
+    await (_db.update(_db.chats)..where((t) => t.id.equals(chatId)))
+        .write(ChatsCompanion(historyFetchedAt: Value(DateTime.now())));
+  }
+
+  Future<void> _appendMessage(String chatId, ChatMessage message) async {
+    final maxPosition = _db.messages.position.max();
+    final last = await (_db.selectOnly(_db.messages)
+          ..addColumns([maxPosition])
+          ..where(_db.messages.chatId.equals(chatId)))
+        .map((row) => row.read(maxPosition))
+        .getSingle();
+    await _insertMessage(chatId, (last ?? -1) + 1, message);
   }
 
   Future<void> _insertMessage(
@@ -238,5 +315,43 @@ class ChatCacheRepository {
         phone: row.phone,
         email: row.email,
         additionalInfo: row.additionalInfo,
+      );
+
+  static ChatMessage _toCachedMessage(network.HistoryMessage message) =>
+      ChatMessage(
+        role: message.isUser ? MessageRole.user : MessageRole.assistant,
+        text: message.content,
+        clinics: message.doctors
+            .map(
+              (doctor) => CachedClinic(
+                name: doctor.name,
+                speciality: doctor.speciality,
+                address: doctor.address,
+                url: doctor.url,
+                phone: doctor.phone,
+                email: doctor.email,
+                additionalInfo: doctor.additionalInfo,
+              ),
+            )
+            .toList(),
+      );
+
+  static network.HistoryMessage _toNetworkMessage(ChatMessage message) =>
+      network.HistoryMessage(
+        isUser: message.role == MessageRole.user,
+        content: message.text,
+        doctors: message.clinics
+            .map(
+              (clinic) => network.Doctor.fromJson({
+                'name': clinic.name,
+                'speciality': clinic.speciality,
+                'address': clinic.address,
+                'url': clinic.url,
+                'phone': clinic.phone,
+                'email': clinic.email,
+                'additionalInfo': clinic.additionalInfo,
+              }),
+            )
+            .toList(),
       );
 }

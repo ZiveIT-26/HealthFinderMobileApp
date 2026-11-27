@@ -155,7 +155,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final (defaultBackground, defaultForeground) = switch (variant) {
       AppButtonVariant.filled => (AppColors.colorPressed, AppColors.textOnAction),
-      AppButtonVariant.soft => (AppColors.colorSoft, AppColors.colorPressed),
+      AppButtonVariant.soft => (AppColors.purpleSoft, AppColors.colorPressed),
     };
     final background = backgroundColor ?? defaultBackground;
     final foreground = foregroundColor ?? defaultForeground;

@@ -89,3 +89,54 @@ class LocationRequestExpired implements Exception {
   @override
   String toString() => 'LocationRequestExpired';
 }
+
+/// One entry of GET /chat/sessions (no messages, only the list item).
+class ChatSession {
+  final String id;
+  final String title;
+  final DateTime createdAt;
+
+  const ChatSession({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+  });
+
+  factory ChatSession.fromJson(Map<String, dynamic> j) => ChatSession(
+        id: j['id'] as String,
+        title: (j['title'] as String?)?.trim().isNotEmpty == true
+            ? j['title'] as String
+            : 'New chat',
+        createdAt: DateTime.parse(j['createdAt'] as String).toLocal(),
+      );
+}
+
+/// One saved message of GET /chat/history/:sessionId.
+class HistoryMessage {
+  final bool isUser;
+  final String content;
+
+  /// Filled when the payload is of type `doctors_list`.
+  final List<Doctor> doctors;
+
+  const HistoryMessage({
+    required this.isUser,
+    required this.content,
+    this.doctors = const [],
+  });
+
+  factory HistoryMessage.fromJson(Map<String, dynamic> j) {
+    final payload = j['payload'];
+    var doctors = const <Doctor>[];
+    if (payload is Map<String, dynamic> && payload['type'] == 'doctors_list') {
+      doctors = (payload['doctors'] as List? ?? const [])
+          .map((d) => Doctor.fromJson(d as Map<String, dynamic>))
+          .toList();
+    }
+    return HistoryMessage(
+      isUser: j['role'] == 'user',
+      content: j['content'] as String? ?? '',
+      doctors: doctors,
+    );
+  }
+}

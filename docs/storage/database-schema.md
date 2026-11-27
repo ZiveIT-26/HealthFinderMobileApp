@@ -286,13 +286,17 @@ and the server never updates an old payload.
 
 ### Cache flow
 
-1. Chat list: upsert by `serverId`; chats missing from the response are deleted
-   with their messages.
-2. Opening a chat: show the local copy, load the history, then in one
-   transaction delete the chat's messages and insert the new ones.
-3. Sending: a new `sessionId` creates a chat row. The reply is collected in
-   memory and written with its clinics when the stream ends. The `title` event
-   updates the title. A broken stream is fixed by the next history load.
+1. Chat list: the server response is upserted by `serverId`; chats missing
+   from the response are deleted with their messages.
+2. Opening a chat: fetch its history from the server and replace the local
+   copy. If the API is unavailable, use that copy only when
+   `historyFetchedAt` is set. This means chats opened online before going
+   offline remain readable; chats not yet opened online are not available
+   offline.
+3. Sending: input is disabled while the backend is unavailable. After a
+   successful `POST /chat`, store the prompt under the returned `sessionId`;
+   store the assistant response and clinic payload when its stream ends (or
+   fails). The next successful history load replaces any partial stream data.
 4. Sign-out: delete the `profile` row; chats, messages and clinics cascade.
    Sign-in with another account replaces the `profile` row the same way.
 
